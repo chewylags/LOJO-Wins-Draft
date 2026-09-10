@@ -70,8 +70,12 @@
     var v = state.lines[team.abbr];
     return typeof v === 'number' && isFinite(v) ? v : team.line;
   }
+  // state.records holds MANUAL entries and always wins; `auto` is the feed
+  // published by the GitHub Action and is never persisted or shared.
+  var auto = {}, autoUpdated = null;
+
   function recordOf(abbr) {
-    var r = state.records[abbr];
+    var r = state.records[abbr] || auto[abbr];
     return r ? { w: r.w | 0, l: r.l | 0, t: r.t | 0 } : { w: 0, l: 0, t: 0 };
   }
   function isLocked(team) {
@@ -128,8 +132,7 @@
       Object.keys(o.records).forEach(function (k) {
         if (!TEAM_BY_ABBR[k]) return;
         var r = o.records[k] || {};
-        var w = clampGame(r.w), l = clampGame(r.l), t = clampGame(r.t);
-        if (w || l || t) s.records[k] = { w: w, l: l, t: t };
+        s.records[k] = { w: clampGame(r.w), l: clampGame(r.l), t: clampGame(r.t) };
       });
     }
     return s;
@@ -515,8 +518,10 @@
       if (r.w + r.l + r.t > GAMES_IN_SEASON) {
         r[key] = Math.max(0, GAMES_IN_SEASON - (r.w + r.l + r.t - r[key]));
       }
-      if (r.w || r.l || r.t) state.records[abbr] = r;
-      else delete state.records[abbr];
+      var fed = auto[abbr];
+      if (fed && fed.w === r.w && fed.l === r.l && fed.t === r.t) delete state.records[abbr];
+      else if (!fed && !r.w && !r.l && !r.t) delete state.records[abbr];
+      else state.records[abbr] = r;
       save(); renderAll();
     });
     return input;
@@ -744,79 +749,45 @@
       + (res.zero ? ', ' + res.zero + ' still 0-0' : '') + '.');
   }
 
-  /* ---- optional: pull records straight from ESPN ------------------- */
+  /* ---- auto records, published by the nightly GitHub Action -------- */
 
-  var ESPN_URLS = [
-    'https://site.api.espn.com/apis/site/v2/sports/football/nfl/standings',
-    'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams',
-    'https://cdn.espn.com/core/nfl/standings?xhr=1',
-  ];
-
-  // Walk arbitrary JSON for {abbreviation, ...record summary "W-L" or "W-L-T"}.
-  function harvestRecords(node, out, seen) {
-    if (!node || typeof node !== 'object') return out;
-    if (seen.has(node)) return out;
-    seen.add(node);
-
-    if (typeof node.abbreviation === 'string') {
-      var abbr = node.abbreviation.toUpperCase();
-      if (TEAM_BY_ABBR[abbr] && !out[abbr]) {
-        var summary = findSummary(node, 0);
-        if (summary) {
-          var b = summary.split('-').map(Number);
-          out[abbr] = { w: b[0] | 0, l: b[1] | 0, t: b[2] | 0 };
-        }
-      }
-    }
-    Object.keys(node).forEach(function (k) { harvestRecords(node[k], out, seen); });
-    return out;
-  }
-
-  function findSummary(node, depth) {
-    if (!node || typeof node !== 'object' || depth > 4) return null;
-    if (typeof node.summary === 'string' && /^\d+-\d+(-\d+)?$/.test(node.summary)) return node.summary;
-    var keys = Object.keys(node), i, found;
-    for (i = 0; i < keys.length; i++) {
-      found = findSummary(node[keys[i]], depth + 1);
-      if (found) return found;
-    }
-    return null;
-  }
-
-  function syncRecords() {
-    var btn = $('#btnSync');
-    note('', 'Contacting ESPN…');
-    btn.disabled = true;
-
-    var blocked = false, attempt = 0;
-    function next() {
-      if (attempt >= ESPN_URLS.length) return Promise.reject(new Error(blocked ? 'blocked' : 'empty'));
-      return fetch(ESPN_URLS[attempt++], { cache: 'no-store' })
-        .then(function (res) { if (!res.ok) throw new Error('http ' + res.status); return res.json(); })
-        .then(function (json) {
-          var found = harvestRecords(json, {}, new WeakSet());
-          if (!Object.keys(found).length) throw new Error('empty');
-          return found;
-        })
-        .catch(function (err) {
-          // A CORS rejection or an offline browser surfaces as a TypeError.
-          if (err && err.name === 'TypeError') blocked = true;
-          return next();
+  // records.json sits next to this page, so loading it is same-origin:
+  // no CORS, no third-party availability to depend on at page load.
+  // A GitHub Action refreshes it every morning.
+  function loadAutoRecords(announce) {
+    if (announce) note('', 'Checking for updated records…');
+    return fetch('records.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('http ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || !data.records) throw new Error('malformed');
+        auto = {};
+        Object.keys(data.records).forEach(function (abbr) {
+          var r = data.records[abbr];
+          if (TEAM_BY_ABBR[abbr]) auto[abbr] = { w: clampGame(r.w), l: clampGame(r.l), t: clampGame(r.t) };
         });
-    }
+        autoUpdated = data.updated || null;
+        renderAll();
+        if (announce) note('ok', autoSummary());
+      })
+      .catch(function () {
+        if (announce) note('bad', 'Could not read records.json. Paste a standings table instead.');
+      });
+  }
 
-    next().then(function (found) {
-      var res = applyRecords(found);
-      if (!res.changed) {
-        note('', 'ESPN has all ' + res.total + ' teams at 0-0 — the season has not kicked off yet.');
-      } else {
-        note('ok', 'Updated ' + res.changed + ' records · ' + new Date().toLocaleTimeString());
-      }
-    }).catch(function (err) {
-      note('bad', err && err.message === 'blocked'
-        ? 'Your browser blocked the request to ESPN. Use Paste standings below.'
-        : 'ESPN returned nothing usable. Use Paste standings below.');
-    }).then(function () { btn.disabled = false; });
+  function autoSummary() {
+    var teams = Object.keys(auto).length;
+    if (!teams) return 'No auto-updated records yet.';
+    var when = autoUpdated ? new Date(autoUpdated) : null;
+    var played = 0;
+    Object.keys(auto).forEach(function (a) {
+      var r = auto[a];
+      if (r.w + r.l + r.t > 0) played++;
+    });
+    return teams + ' teams auto-updated' + (played ? ', ' + played + ' with games played' : '')
+      + (when && !isNaN(when) ? ' · ' + when.toLocaleDateString() + ' ' + when.toLocaleTimeString() : '');
   }
 
   /* ---------------- wiring ---------------------------------------- */
@@ -871,11 +842,13 @@
       if (state.editLines) { ui.tab = 'board'; $$('#tabs .tab')[0].click(); }
     });
 
-    $('#btnSync').addEventListener('click', syncRecords);
+    $('#btnRefresh').addEventListener('click', function () { loadAutoRecords(true); });
     $('#btnPaste').addEventListener('click', importPasted);
     $('#btnClearRecords').addEventListener('click', function () {
       if (!confirm('Clear every team record?')) return;
-      state.records = {}; save(); renderAll(); toast('Records cleared');
+      state.records = {}; save(); renderAll();
+      note('', autoSummary());
+      toast('Manual entries cleared');
     });
 
     $('#btnExport').addEventListener('click', exportFile);
@@ -921,6 +894,7 @@
     bind();
     renderAll();
     syncHash();
+    loadAutoRecords(false).then(function () { note('', autoSummary()); });
     if (fromLink) toast('Draft loaded from link');
   }
 

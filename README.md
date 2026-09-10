@@ -15,14 +15,24 @@ way. Each side ends up with six teams.
 off the board so nobody's Rams fandom tips the scales. It's a toggle on the Setup tab if you
 ever want them back in.
 
-**Records** can be filled in three ways: typed by hand on the Rosters tab, pasted in as a
-standings table, or pulled live from ESPN. Pasting is the reliable one — copy the standings
-off ESPN, NFL.com or anywhere else, drop the text into the box under Setup → Records, and
-team names and their W-L are picked out of it automatically; surrounding columns (PCT, home
-and away splits, points for/against) are ignored.
+**Records update themselves.** A scheduled GitHub Action (`.github/workflows/records.yml`)
+runs every morning, fetches the current standings, and commits them to `records.json`. The
+page reads that file from its own origin, which is the whole point: fetching a sports API
+directly from the browser is at the mercy of CORS, while a fetch from a CI runner is not.
+
+That leaves two manual paths, both under Setup → Records:
+
+- **Paste a standings table** — copy the standings off ESPN, NFL.com or anywhere else and
+  drop the text in. Team names and their W-L are picked out automatically; surrounding
+  columns (PCT, home/away splits, points for/against) are ignored.
+- **Type a record** on the Rosters tab. Anything typed by hand overrides the feed for that
+  team until *Clear manual entries*.
 
 Each team then shows how far ahead of or behind its line it's running: a team on a 10.5 line
 sitting at 6-2 reads `+0.6`, because eight games in it "should" have about 5.4 wins.
+
+> GitHub disables scheduled workflows in a repository with no pushes for 60 days. If records
+> ever stop refreshing in the offseason, re-enable the workflow from the Actions tab.
 
 ## Sharing it without a server
 
@@ -62,4 +72,6 @@ that a fresh browser starts from, edit the `line` values in `teams.js`.
 | `index.html` | Page structure |
 | `styles.css` | All styling |
 | `teams.js` | The 32 teams — colors, divisions, default win totals |
-| `app.js` | Draft logic, board rendering, URL encoding, record sync |
+| `app.js` | Draft logic, board rendering, URL encoding, record loading |
+| `records.json` | Current records, rewritten each morning by the Action |
+| `scripts/fetch-records.mjs` | Fetches standings; runs in CI, never in the browser |
