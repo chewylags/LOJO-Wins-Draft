@@ -215,10 +215,11 @@ html,body{ overscroll-behavior-y:contain; }
 .sb-side.p1 .sb-name,.sb-side.p1 .sb-big{ color:var(--p1) }
 
 /* ---------- tabs --------------------------------------------------- */
+.tabs-wrap{ margin-top:18px; }
 .tabs{
-  display:flex; gap:6px; margin:18px auto 0;
+  display:flex; gap:6px;
   background:var(--panel); border:1px solid var(--line);
-  border-radius:12px; padding:5px; max-width:1180px;
+  border-radius:12px; padding:5px;
 }
 .tab{
   flex:1; border:0; background:transparent; color:var(--ink-2);
@@ -456,7 +457,7 @@ html,body{ overscroll-behavior-y:contain; }
 /* ---------- desktop -------------------------------------------------- */
 @media (min-width:1040px){
   body{ font-size:15px }
-  .tabs{ display:none }
+  .tabs-wrap{ display:none }
   .layout{ grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr) }
   .rightcol{ display:block }
   .pane{ display:block !important }
