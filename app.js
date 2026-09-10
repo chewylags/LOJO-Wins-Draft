@@ -62,8 +62,29 @@
   // What a roster slot actually holds now: the team drafted, or whoever
   // replaced them under the QB rule.
   function effectiveTeam(pickAbbr) {
-    var to = state.swaps[pickAbbr];
-    return to && TEAM_BY_ABBR[to] ? to : pickAbbr;
+    var sw = state.swaps[pickAbbr];
+    return sw && TEAM_BY_ABBR[sw.in] ? sw.in : pickAbbr;
+  }
+
+  // A swapped slot keeps the line of the team that was DRAFTED — you are
+  // still being judged against the bet you made on draft day.
+  function slotLine(pickAbbr) {
+    var team = TEAM_BY_ABBR[pickAbbr];
+    return team ? lineOf(team) : 0;
+  }
+
+  // And its record is the dropped team's record up to the swap, plus the
+  // replacement's from the swap onward — one continuous 17-game season for
+  // the slot, which is how these have always been tallied by hand.
+  function slotRecord(pickAbbr) {
+    var sw = state.swaps[pickAbbr];
+    if (!sw) return recordOf(pickAbbr);
+    var now = recordOf(sw.in), out = sw.out, base = sw.base;
+    return {
+      w: out.w + Math.max(0, now.w - base.w),
+      l: out.l + Math.max(0, now.l - base.l),
+      t: out.t + Math.max(0, now.t - base.t),
+    };
   }
 
   function ownerOf(abbr) {
@@ -87,7 +108,15 @@
       if (o[i] !== playerIdx) return;
       var abbr = effectiveTeam(pick);
       var team = TEAM_BY_ABBR[abbr];
-      if (team) out.push({ team: team, pick: pick, from: abbr === pick ? null : TEAM_BY_ABBR[pick] });
+      if (!team) return;
+      var sw = abbr === pick ? null : state.swaps[pick];
+      out.push({
+        team: team, pick: pick,
+        from: sw ? TEAM_BY_ABBR[pick] : null,
+        outRec: sw ? sw.out : null,
+        line: slotLine(pick),
+        rec: slotRecord(pick),
+      });
     });
     return out;
   }
@@ -129,26 +158,22 @@
     return 0;
   }
 
-  // Where a team is headed: wins banked, plus the rest of its schedule at
-  // the rate its own line implies. Anchoring the remainder to the line
-  // (rather than to results so far) keeps week 1 sane — one loss nudges a
-  // 10.5-win team to 10, it doesn't project them to 0.
-  function projectedWins(team) {
-    var r = recordOf(team.abbr), gp = r.w + r.l + r.t, eff = effectiveWins(r);
+  // Where a roster slot is headed: wins banked, plus the rest of its
+  // schedule at the rate its own line implies. Anchoring the remainder to
+  // the line (rather than to results so far) keeps week 1 sane — one loss
+  // nudges a 10.5-win team to 10, it doesn't project them to 0.
+  function projectedFrom(line, r) {
+    var gp = r.w + r.l + r.t, eff = effectiveWins(r);
     if (gp >= GAMES_IN_SEASON) return eff;
-    return eff + lineOf(team) * ((GAMES_IN_SEASON - gp) / GAMES_IN_SEASON);
+    return eff + line * ((GAMES_IN_SEASON - gp) / GAMES_IN_SEASON);
   }
 
-  function isFinished(team) {
-    var r = recordOf(team.abbr);
-    return r.w + r.l + r.t >= GAMES_IN_SEASON;
-  }
+  function isDone(r) { return r.w + r.l + r.t >= GAMES_IN_SEASON; }
 
   // Final once the 17 games are in; a rounded projection until then.
-  function pointsFor(team) {
-    var line = lineOf(team);
-    if (isFinished(team)) return pointsFrom(effectiveWins(recordOf(team.abbr)), line);
-    return Math.round(pointsFrom(projectedWins(team), line));
+  function pointsForSlot(line, r) {
+    if (isDone(r)) return pointsFrom(effectiveWins(r), line);
+    return Math.round(pointsFrom(projectedFrom(line, r), line));
   }
 
   function isLocked(team) {
@@ -199,13 +224,20 @@
     }
     if (o.swaps && typeof o.swaps === 'object') {
       Object.keys(o.swaps).forEach(function (k) {
-        var to = String(o.swaps[k] || '').toUpperCase();
+        var v = o.swaps[k];
+        // Older drafts stored only the incoming team.
+        if (typeof v === 'string') v = { in: v };
+        if (!v || typeof v !== 'object') return;
+        var to = String(v.in || '').toUpperCase();
         // Only a real team, only off a slot that exists, never onto itself
         // or onto a team already held.
-        if (TEAM_BY_ABBR[k] && TEAM_BY_ABBR[to] && to !== k && s.picks.indexOf(k) !== -1
-            && s.picks.indexOf(to) === -1) {
-          s.swaps[k] = to;
+        if (!(TEAM_BY_ABBR[k] && TEAM_BY_ABBR[to] && to !== k
+              && s.picks.indexOf(k) !== -1 && s.picks.indexOf(to) === -1)) return;
+        function rec(x) {
+          x = x || {};
+          return { w: clampGame(x.w), l: clampGame(x.l), t: clampGame(x.t) };
         }
+        s.swaps[k] = { in: to, out: rec(v.out), base: rec(v.base) };
       });
     }
     if (o.lines && typeof o.lines === 'object') {
@@ -241,7 +273,14 @@
       z: state.size,
       w: state.lockNFCW ? 1 : 0,
       p: state.picks,
-      x: state.swaps,
+      x: (function () {
+        var out = {};
+        Object.keys(state.swaps).forEach(function (k) {
+          var sw = state.swaps[k];
+          out[k] = [sw.in, sw.out.w, sw.out.l, sw.out.t, sw.base.w, sw.base.l, sw.base.t].join('-');
+        });
+        return out;
+      })(),
       l: state.lines,
       r: {},
     };
@@ -261,9 +300,19 @@
         records[k] = { w: bits[0], l: bits[1], t: bits[2] || 0 };
       });
     }
+    var swaps = {};
+    if (p.x) {
+      Object.keys(p.x).forEach(function (k) {
+        var v = p.x[k];
+        if (typeof v !== 'string') { swaps[k] = v; return; }
+        var b = v.split('-');
+        swaps[k] = { in: b[0], out: { w: b[1], l: b[2], t: b[3] },
+                     base: { w: b[4], l: b[5], t: b[6] } };
+      });
+    }
     return sanitize({
       season: p.s, names: p.n, first: p.f, size: p.z,
-      lockNFCW: p.w !== 0, picks: p.p, swaps: p.x, lines: p.l, records: records,
+      lockNFCW: p.w !== 0, picks: p.p, swaps: swaps, lines: p.l, records: records,
     });
   }
 
@@ -373,13 +422,12 @@
 
   function totalsFor(idx) {
     var entries = rosterEntries(idx), teams = entries.map(function (e) { return e.team; });
-    var proj = 0, w = 0, l = 0, t = 0, pts = 0, done = teams.length > 0;
-    teams.forEach(function (team) {
-      proj += lineOf(team);
-      var r = recordOf(team.abbr);
-      w += r.w; l += r.l; t += r.t;
-      pts += pointsFor(team);
-      if (!isFinished(team)) done = false;
+    var proj = 0, w = 0, l = 0, t = 0, pts = 0, done = entries.length > 0;
+    entries.forEach(function (e) {
+      proj += e.line;
+      w += e.rec.w; l += e.rec.l; t += e.rec.t;
+      pts += pointsForSlot(e.line, e.rec);
+      if (!isDone(e.rec)) done = false;
     });
     return { teams: teams, entries: entries, proj: proj, w: w, l: l, t: t,
              gp: w + l + t, pts: pts, done: done };
@@ -540,7 +588,7 @@
     }
 
     var list = el('ul', 'rlist');
-    d.entries.slice().sort(function (a, b) { return lineOf(b.team) - lineOf(a.team); })
+    d.entries.slice().sort(function (a, b) { return b.line - a.line; })
       .forEach(function (entry) { list.appendChild(rosterRow(entry)); });
     panel.appendChild(list);
 
@@ -580,29 +628,41 @@
     name.appendChild(swapBtn);
     main.appendChild(name);
 
-    var sub = el('div', 'rrow-line', 'line ' + fmt(lineOf(team)));
-    if (entry.from) sub.appendChild(el('span', 'swap-note', ' · in for ' + entry.from.short));
+    var sub = el('div', 'rrow-line', 'line ' + fmt(entry.line));
+    if (entry.from) {
+      sub.appendChild(el('span', 'swap-note', ' · in for ' + entry.from.short
+        + ' (' + entry.outRec.w + '-' + entry.outRec.l + ')'));
+    }
     main.appendChild(sub);
     li.appendChild(main);
 
-    var r = recordOf(team.abbr);
-    var rec = el('div', 'rec');
-    rec.appendChild(recInput(team.abbr, 'w', r.w, 'wins'));
-    rec.appendChild(el('span', 'sep', '-'));
-    rec.appendChild(recInput(team.abbr, 'l', r.l, 'losses'));
-    if (r.t) {
+    var r = entry.rec;
+    if (entry.from) {
+      // A swapped slot's record is derived from both teams, so it is shown
+      // rather than typed; edit the underlying team's record instead.
+      var shown = el('div', 'rec rec-static', r.w + '-' + r.l + (r.t ? '-' + r.t : ''));
+      shown.title = entry.from.short + ' ' + entry.outRec.w + '-' + entry.outRec.l
+        + ' then ' + team.short + ' ' + (r.w - entry.outRec.w) + '-' + (r.l - entry.outRec.l);
+      li.appendChild(shown);
+    } else {
+      var rec = el('div', 'rec');
+      rec.appendChild(recInput(team.abbr, 'w', r.w, 'wins'));
       rec.appendChild(el('span', 'sep', '-'));
-      rec.appendChild(recInput(team.abbr, 't', r.t, 'ties'));
+      rec.appendChild(recInput(team.abbr, 'l', r.l, 'losses'));
+      if (r.t) {
+        rec.appendChild(el('span', 'sep', '-'));
+        rec.appendChild(recInput(team.abbr, 't', r.t, 'ties'));
+      }
+      li.appendChild(rec);
     }
-    li.appendChild(rec);
 
     var gp = r.w + r.l + r.t;
-    var pts = pointsFor(team), done = isFinished(team);
+    var pts = pointsForSlot(entry.line, r), done = isDone(r);
     var cls = pts > 0 ? 'up' : pts < 0 ? 'down' : 'even';
     var cell = el('span', 'pts ' + cls + (done ? '' : ' is-proj'), gp ? signed(pts) : '—');
     cell.title = gp
-      ? (done ? effectiveWins(r) + ' wins' : 'on track for ' + Math.round(projectedWins(team)) + ' wins')
-        + ' against a ' + fmt(lineOf(team)) + ' line'
+      ? (done ? effectiveWins(r) + ' wins' : 'on track for ' + Math.round(projectedFrom(entry.line, r)) + ' wins')
+        + ' against a ' + fmt(entry.line) + ' line'
       : 'No games played yet';
     li.appendChild(cell);
     return li;
@@ -875,14 +935,25 @@
   // lines and the final records, and everything else is derived.
   var historyYear = null;
 
+  // A slot's season: the replacement's record plus whatever the team that
+  // was given up had banked before the swap.
+  function historySlot(p) {
+    var r = { w: p.w | 0, l: p.l | 0, t: p.t | 0 };
+    var was = p.replaced;
+    if (was && (was.w != null || was.l != null)) {
+      r.w += was.w | 0; r.l += was.l | 0; r.t += was.t | 0;
+    }
+    return r;
+  }
+
   function seasonTotals(season, idx) {
     var picks = season.picks.filter(function (p) { return p.by === idx; });
     var lines = 0, w = 0, l = 0, t = 0, pts = 0;
     picks.forEach(function (p) {
-      var wins = (p.w | 0) + ((p.t | 0) * 0.5);
+      var r = historySlot(p);
       lines += p.line;
-      w += p.w | 0; l += p.l | 0; t += p.t | 0;
-      pts += pointsFrom(wins, p.line);
+      w += r.w; l += r.l; t += r.t;
+      pts += pointsFrom(r.w + r.t * 0.5, p.line);
     });
     return { picks: picks, lines: lines, w: w, l: l, t: t, pts: pts };
   }
@@ -1006,16 +1077,24 @@
     var sub = el('div', 'rrow-line', 'line ' + fmt(p.line));
     if (p.replaced) {
       var was = TEAM_BY_ABBR[p.replaced.abbr];
-      var note = el('span', 'swap-note', ' · in for ' + (was ? was.short : p.replaced.abbr));
+      var label = ' · in for ' + (was ? was.short : p.replaced.abbr);
+      if (p.replaced.w != null) label += ' (' + (p.replaced.w | 0) + '-' + (p.replaced.l | 0) + ')';
+      var note = el('span', 'swap-note', label);
       if (p.replaced.note) note.title = p.replaced.note;
       sub.appendChild(note);
     }
     main.appendChild(sub);
     li.appendChild(main);
 
-    li.appendChild(el('span', 'hrec', (p.w | 0) + '-' + (p.l | 0) + (p.t ? '-' + p.t : '')));
+    var slot = historySlot(p);
+    var recCell = el('span', 'hrec', slot.w + '-' + slot.l + (slot.t ? '-' + slot.t : ''));
+    if (p.replaced && p.replaced.w != null) {
+      recCell.title = (TEAM_BY_ABBR[p.replaced.abbr] || {}).short + ' ' + p.replaced.w + '-' + p.replaced.l
+        + ' then ' + (team ? team.short : p.abbr) + ' ' + (p.w | 0) + '-' + (p.l | 0);
+    }
+    li.appendChild(recCell);
 
-    var pts = pointsFrom((p.w | 0) + ((p.t | 0) * 0.5), p.line);
+    var pts = pointsFrom(slot.w + slot.t * 0.5, p.line);
     var cls = pts > 0 ? 'up' : pts < 0 ? 'down' : 'even';
     li.appendChild(el('span', 'pts ' + cls, signed(pts)));
     return li;
@@ -1114,8 +1193,17 @@
 
   function applySwap(pickAbbr, toAbbr) {
     var was = TEAM_BY_ABBR[effectiveTeam(pickAbbr)];
-    if (toAbbr === pickAbbr) delete state.swaps[pickAbbr];
-    else state.swaps[pickAbbr] = toAbbr;
+    if (toAbbr === pickAbbr) {
+      delete state.swaps[pickAbbr];
+    } else {
+      // Freeze what each side had at this moment: the dropped team's
+      // record stops here, and the replacement only counts from here on.
+      state.swaps[pickAbbr] = {
+        in: toAbbr,
+        out: slotRecord(pickAbbr),
+        base: recordOf(toAbbr),
+      };
+    }
     save();
     renderAll();
     closeSwap();

@@ -115,9 +115,19 @@ refuses to redirect twice for the same build so a stale cache can't cause a relo
 
 A season-ending injury to a quarterback before week 6 lets you trade that team for any team
 still on the board. In the Rosters tab, the ⇄ beside a team opens a picker of what's
-available; the replacement is scored against **its own** line and **its own** full-season
-record, so there is nothing to game by swapping late. The team given up is dropped from the
-board rather than returned to the pool — neither manager can draft it.
+available.
+
+A swapped slot is scored the way these have always been tallied by hand:
+
+- **The line stays with the team you drafted.** You are still judged against the bet you made
+  on draft day, not against the replacement's number.
+- **The record is both halves added together** — what the dropped team had banked up to the
+  swap, plus what the replacement does from the swap onward. One continuous 17-game season
+  for the slot. Swapping stores both teams' records at that moment, so the arithmetic holds
+  however the season goes afterwards.
+
+The team given up is dropped from the board rather than returned to the pool — neither
+manager can draft it.
 
 Swapped rosters carry through share links and published drafts, and past seasons show the
 same thing with a SWAP badge and who the team came in for.
