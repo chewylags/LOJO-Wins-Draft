@@ -797,6 +797,37 @@
       + (when && !isNaN(when) ? ' · ' + when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '');
   }
 
+  /* ---------------- new build detection ---------------------------- */
+
+  // Pages serves HTML with max-age=600, so a refresh can hand back a copy
+  // up to ten minutes old — and from the Home Screen there is no reload
+  // button to lean on. version.txt is fetched no-store, so it is always
+  // current; if it names a build newer than the one running, reload onto a
+  // URL carrying that build. A URL the cache has never seen has to be
+  // fetched fresh, which a plain reload() cannot guarantee. The draft
+  // lives in the hash, so it survives the trip.
+  function currentBuild() {
+    var meta = document.querySelector('meta[name="build"]');
+    return meta ? meta.content : 'dev';
+  }
+
+  function checkForNewBuild() {
+    var running = currentBuild();
+    if (running === 'dev') return Promise.resolve(false);   // local, unstamped
+    return fetch('version.txt?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (res) { return res.ok ? res.text() : null; })
+      .then(function (text) {
+        var latest = (text || '').trim();
+        if (!latest || latest === running) return false;
+        // Already asked for this build and still got the old one: stop,
+        // rather than bouncing between the same two loads forever.
+        if (location.search.indexOf('v=' + latest) !== -1) return false;
+        location.replace(location.pathname + '?v=' + encodeURIComponent(latest) + location.hash);
+        return true;
+      })
+      .catch(function () { return false; });
+  }
+
   /* ---------------- pull to refresh -------------------------------- */
 
   // Added to the Home Screen, this runs with no browser chrome and so no
@@ -807,8 +838,9 @@
 
   function refreshAll() {
     // Live scores first; the published file is a cheap same-origin
-    // backstop if ESPN doesn't answer.
-    return refreshLive().then(loadPublished);
+    // backstop if ESPN doesn't answer. A pull is also the natural moment
+    // to notice the site itself has been updated.
+    return refreshLive().then(loadPublished).then(checkForNewBuild);
   }
 
   function initPullToRefresh() {
@@ -983,6 +1015,7 @@
     loadPublished()
       .then(function () { adopt(cachedLive()); })
       .then(function () { note('', autoSummary()); });
+    checkForNewBuild();
     if (fromLink) toast('Draft loaded from link');
   }
 

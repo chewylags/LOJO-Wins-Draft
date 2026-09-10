@@ -76,6 +76,18 @@ Each browser also remembers the last draft you had open, so refreshing or coming
 picks up right where you left off. **Export file** / **Import file** give you a permanent
 copy to keep between seasons.
 
+## Cache busting
+
+GitHub Pages serves with `Cache-Control: max-age=600`, so a browser can hand back a copy up
+to ten minutes old — and from the Home Screen there is no reload button to fall back on.
+
+The deploy stamps the commit SHA into the page, publishes it as `version.txt`, and appends
+it to the CSS and JS URLs. The running app fetches `version.txt` (no-store, so never cached)
+on load and on every pull-to-refresh; if it names a newer build, the app reloads onto
+`?v=<sha>`. A URL the cache has never seen must be fetched fresh, which a plain `reload()`
+cannot guarantee. The draft lives in the URL hash, so it survives the trip, and the app
+refuses to redirect twice for the same build so a stale cache can't cause a reload loop.
+
 ## Running it
 
 It's plain HTML, CSS and JavaScript — no build step, no dependencies.
