@@ -24,6 +24,7 @@
       lines: {},         // abbr -> overridden win total
       records: {},       // abbr -> { w, l, t }
       editLines: false,
+      updatedAt: 0,      // last local change, for comparing against a publish
     };
   }
 
@@ -121,6 +122,7 @@
   /* ---------------- persistence ----------------------------------- */
 
   function save() {
+    state.updatedAt = Date.now();
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* private mode */ }
     syncHash();
   }
@@ -147,6 +149,7 @@
     s.size = size >= 1 && size <= 14 ? size : d.size;
     s.lockNFCW = o.lockNFCW !== false;
     s.editLines = !!o.editLines;
+    s.updatedAt = typeof o.updatedAt === 'number' ? o.updatedAt : 0;
 
     if (Array.isArray(o.picks)) {
       var seen = {};
@@ -797,6 +800,37 @@
       + (when && !isNaN(when) ? ' · ' + when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '');
   }
 
+  /* ---------------- the published draft ---------------------------- */
+
+  // Browsers don't share localStorage — and on iOS a Home Screen app has
+  // its own storage separate from Safari's — so a draft made on one device
+  // is invisible everywhere else unless it travels. A share link carries
+  // it in the hash; draft.json is the standing copy, so the plain URL shows
+  // the real draft to anyone who opens it, Logan included.
+  function loadPublishedDraft() {
+    return fetch('draft.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (data) {
+        if (!data || !data.code) return null;
+        return { publishedAt: Date.parse(data.publishedAt) || 0, state: decodeState(data.code) };
+      })
+      .catch(function () { return null; });
+  }
+
+  // Adopt it only when it is genuinely newer than what this browser has,
+  // so a publish reaches both of you on a refresh without stamping over
+  // edits made here since.
+  function considerPublishedDraft(fromLink, localAt) {
+    if (fromLink) return Promise.resolve();     // an explicit link is deliberate
+    return loadPublishedDraft().then(function (pub) {
+      if (!pub || !pub.publishedAt || pub.publishedAt <= localAt) return;
+      state = pub.state;
+      save();
+      renderAll();
+      toast('Loaded the published draft');
+    });
+  }
+
   /* ---------------- new build detection ---------------------------- */
 
   // Pages serves HTML with max-age=600, so a refresh can hand back a copy
@@ -1000,6 +1034,7 @@
 
   function init() {
     var fromLink = readHash(), local = loadLocal();
+    var localAt = local ? local.updatedAt || 0 : 0;
     if (fromLink) {
       state = fromLink;
       try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
@@ -1016,6 +1051,7 @@
       .then(function () { adopt(cachedLive()); })
       .then(function () { note('', autoSummary()); });
     checkForNewBuild();
+    considerPublishedDraft(fromLink, localAt);
     if (fromLink) toast('Draft loaded from link');
   }
 

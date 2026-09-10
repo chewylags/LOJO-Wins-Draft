@@ -61,6 +61,29 @@ push trigger other workflows, so the Pages deploy is chained to that job finishi
 
 ## Sharing it without a server
 
+Browsers do not share storage with each other, and on iOS a Home Screen app has its own
+storage separate from Safari's. A draft made in one place is invisible everywhere else
+unless it travels. Two things carry it:
+
+**The Share link.** Every pick, name, win total and manual record is encoded into the `#d=…`
+part of the URL. Tap **Share**, send the link, and whoever opens it sees that exact board.
+The link must keep its `#…` part — a bare URL with the fragment stripped is a blank slate.
+
+**The published draft.** `draft.json` is the standing copy that the plain site URL serves to
+everyone. To set it: tap Share, copy the link, then run the **Publish draft** workflow
+(Actions → Publish draft → Run workflow) and paste the link in. It validates the teams,
+commits `draft.json` and redeploys.
+
+The page then picks whichever is most authoritative: an explicit share link wins, otherwise
+a published draft newer than this browser's own copy wins, otherwise the browser keeps what
+it has. So a publish reaches both of you on a refresh without ever overwriting edits made
+since.
+
+Records need none of this — they come from `records.json`, which both of you already load
+from the site, so those stay in sync on their own.
+
+## The old sharing notes
+
 There is no backend, no database, no login — and you can still both use it.
 
 The **entire draft is encoded into the page URL**. Every pick, name, win total and record

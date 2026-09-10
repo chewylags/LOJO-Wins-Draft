@@ -1,0 +1,69 @@
+name: Publish draft
+
+# Makes a draft the standing one, so the plain site URL shows it to both
+# managers instead of each browser only knowing its own copy.
+#
+# To use: tap Share in the app, copy the link, then run this workflow and
+# paste it into the box.
+
+on:
+  workflow_dispatch:
+    inputs:
+      link:
+        description: 'Paste the Share link from the app'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-draft
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write draft.json
+        env:
+          DRAFT_INPUT: ${{ inputs.link }}
+        run: node scripts/publish-draft.mjs
+
+      - name: Commit
+        run: |
+          if git diff --quiet -- draft.json; then
+            echo "That draft is already the published one."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add draft.json
+          git commit -m "Publish draft"
+          git push
+
+  # The commit above is made with GITHUB_TOKEN, which deliberately does not
+  # trigger workflows, so deploy from here.
+  deploy:
+    needs: publish
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/configure-pages@v5
+      - run: node scripts/stamp-build.mjs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
