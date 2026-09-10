@@ -33,18 +33,11 @@ jobs:
           # Turns Pages on for the repo if it isn't already, instead of
           # failing with "Get Pages site failed".
           enablement: true
-      # GitHub Pages serves with max-age=600, so a phone can hold a stale
-      # copy for ten minutes — and a Home Screen app has no reload button
-      # at all. Stamp the build into the page, publish it as version.txt
-      # for the running app to compare against, and version the asset URLs
-      # so fresh HTML can never pair with cached JS or CSS.
+
+      # Writes version.txt and versions the asset URLs, so a phone holding a
+      # cached copy can tell it is out of date and fetch the new one.
       - name: Stamp the build
-        run: |
-          SHA="${GITHUB_SHA:0:8}"
-          printf '%s' "$SHA" > version.txt
-          sed -i             -e "s|<meta name=\"build\" content=\"dev\">|<meta name=\"build\" content=\"$SHA\">|"             -e "s|href=\"styles.css\"|href=\"styles.css?v=$SHA\"|"             -e "s|src=\"teams.js\"|src=\"teams.js?v=$SHA\"|"             -e "s|src=\"records-parse.js\"|src=\"records-parse.js?v=$SHA\"|"             -e "s|src=\"app.js\"|src=\"app.js?v=$SHA\"|"             index.html
-          echo "build $SHA"
-          grep -E 'meta name="build"|styles.css|app.js' index.html
+        run: node scripts/stamp-build.mjs
 
       - uses: actions/upload-pages-artifact@v3
         with:
