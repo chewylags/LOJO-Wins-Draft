@@ -151,31 +151,11 @@
         </label>
 
         <div class="panel-head panel-head-sub"><h3 class="panel-title sm">Records</h3></div>
-        <p class="hint">
-          Records keep themselves current: a job refreshes them every morning and every
-          half hour while games are being played. <strong>Update now</strong> pulls the
-          live scores immediately — worth a tap between the early and late Sunday windows.
-          Anything you type by hand overrides the feed for that team until you clear it.
-        </p>
         <div class="btnrow">
           <button class="btn" id="btnRefresh" type="button">⟳ Update now</button>
           <button class="btn btn-ghost" id="btnClearRecords" type="button">Clear manual entries</button>
         </div>
         <p class="syncnote" id="syncNote" role="status" aria-live="polite"></p>
-
-        <details class="paste" id="pasteWrap">
-          <summary>Paste a standings table</summary>
-          <p class="hint">
-            A manual fallback, in case the feed is ever down or wrong. Select the standings on
-            ESPN, NFL.com or anywhere else, copy, and drop it in below — team names and their
-            W-L are picked out automatically and the surrounding columns are ignored.
-          </p>
-          <textarea id="pasteBox" rows="5" spellcheck="false"
-            placeholder="Buffalo Bills 5-2&#10;Miami Dolphins 2-5&#10;New England Patriots  4  3  0  .571"></textarea>
-          <div class="btnrow">
-            <button class="btn" id="btnPaste" type="button">Read standings</button>
-          </div>
-        </details>
 
         <div class="panel-head panel-head-sub"><h3 class="panel-title sm">Draft data</h3></div>
         <div class="btnrow">
@@ -188,19 +168,13 @@
           <button class="btn btn-danger" id="btnResetPicks" type="button">Clear picks</button>
           <button class="btn btn-danger" id="btnResetAll" type="button">Reset everything</button>
         </div>
-        <p class="hint">
-          Everything lives in this browser and in the share link — there's no server.
-          Send the link to your co-manager and they'll open the exact same board.
-        </p>
       </div>
     </section>
   </div>
 </main>
 
 <footer class="wrap foot">
-  <span>LOJO Wins Draft</span>
-  <span class="dot">•</span>
-  <span>no server, no database — the draft rides in the URL</span>
+  <span>LOJO</span>
 </footer>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

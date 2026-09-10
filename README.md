@@ -27,13 +27,8 @@ ever want them back in.
 Whichever is more recent wins, and feeds merge rather than replace — some endpoints only
 describe the teams playing this week, so overwriting wholesale would drop everyone else.
 
-Two manual paths remain, both under Setup → Records:
-
-- **Paste a standings table** — copy the standings off ESPN, NFL.com or anywhere else and
-  drop the text in. Team names and their W-L are picked out automatically; surrounding
-  columns (PCT, home/away splits, points for/against) are ignored.
-- **Type a record** on the Rosters tab. Anything typed by hand overrides the feed for that
-  team until *Clear manual entries*.
+Records can also be typed by hand on the Rosters tab. Anything typed overrides the feed for
+that team until *Clear manual entries*.
 
 Each team then shows how far ahead of or behind its line it's running: a team on a 10.5 line
 sitting at 6-2 reads `+0.6`, because eight games in it "should" have about 5.4 wins.
@@ -84,6 +79,6 @@ that a fresh browser starts from, edit the `line` values in `teams.js`.
 | `styles.css` | All styling |
 | `teams.js` | The 32 teams — colors, divisions, default win totals |
 | `app.js` | Draft logic, board rendering, URL encoding, record loading |
-| `records-parse.js` | Standings parser, shared by the page and the CI script |
+| `records-parse.js` | ESPN response parser, shared by the page and the CI script |
 | `records.json` | Current records, rewritten by the scheduled Action |
 | `scripts/fetch-records.mjs` | Fetches standings in CI and commits `records.json` |

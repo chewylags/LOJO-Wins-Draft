@@ -399,27 +399,6 @@ input{ font:inherit; }
 .toggle-text strong{ display:block; font-size:13.5px; font-weight:600 }
 .toggle-text .hint{ margin-top:3px }
 
-.paste{
-  margin-top:12px; border:1px solid var(--line); border-radius:var(--radius);
-  background:var(--bg-2); padding:12px 14px;
-}
-.paste > summary{
-  cursor:pointer; font-size:13px; font-weight:600; color:var(--ink-2);
-  list-style:none; display:flex; align-items:center; gap:7px;
-}
-.paste > summary::-webkit-details-marker{ display:none }
-.paste > summary::before{ content:"▸"; color:var(--ink-3); transition:transform .15s }
-.paste[open] > summary::before{ transform:rotate(90deg) }
-.paste > summary:hover{ color:var(--ink) }
-.paste .hint{ margin-top:9px }
-#pasteBox{
-  width:100%; margin-top:9px; resize:vertical;
-  background:var(--bg); border:1px solid var(--line); border-radius:var(--radius-sm);
-  color:var(--ink); padding:10px 11px; font-family:var(--mono); font-size:12px; line-height:1.6;
-}
-#pasteBox::placeholder{ color:var(--ink-3) }
-#pasteBox:focus{ outline:none; border-color:#34415c }
-
 .syncnote{ font-size:11.5px; color:var(--ink-3); min-height:16px; margin:4px 0 0; font-family:var(--mono) }
 .syncnote.ok{ color:var(--p0) } .syncnote.bad{ color:var(--danger) }
 
