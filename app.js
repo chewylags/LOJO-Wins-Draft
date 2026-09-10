@@ -1015,11 +1015,15 @@
       banner.appendChild(el('span', 'hbanner-win', 'Dead heat'));
     } else {
       var a = seasonTotals(season, 0), b = seasonTotals(season, 1);
-      var margin = Math.abs(a.pts - b.pts);
+      // Points decide a season; wins only break a tie in them. Either way
+      // the banner shows the margin that actually settled it.
+      var byPoints = Math.abs(a.pts - b.pts);
+      var margin = byPoints || Math.abs(a.w - b.w);
       var wrap = el('span', 'hbanner-win is-p' + winner);
       wrap.appendChild(el('span', 'trophy', '🏆'));
-      wrap.appendChild(el('span', null, season.players[winner]
-        + (margin ? ' by ' + fmt(margin) : ' on wins')));
+      wrap.appendChild(el('span', null, season.players[winner] + ' by ' + fmt(margin)));
+      wrap.title = season.players[winner] + ' by ' + fmt(margin) + ' '
+        + (byPoints ? 'points' : 'wins — the two were level on points');
       banner.appendChild(wrap);
     }
     host.appendChild(banner);
