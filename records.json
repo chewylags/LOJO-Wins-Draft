@@ -1,7 +1,168 @@
 {
-  "updated": null,
-  "source": "seed — replaced on the first successful run of .github/workflows/records.yml",
-  "teams": 0,
-  "played": 0,
-  "records": {}
+  "updated": "2026-09-10T19:06:32.705Z",
+  "source": "https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings?region=us&lang=en&contentorigin=espn&type=0&level=1",
+  "teams": 32,
+  "played": 2,
+  "records": {
+    "ARI": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "ATL": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "BAL": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "BUF": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "CAR": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "CHI": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "CIN": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "CLE": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "DAL": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "DEN": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "DET": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "GB": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "HOU": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "IND": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "JAX": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "KC": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "LAC": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "LAR": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "LV": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "MIA": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "MIN": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "NE": {
+      "w": 0,
+      "l": 1,
+      "t": 0
+    },
+    "NO": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "NYG": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "NYJ": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "PHI": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "PIT": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "SEA": {
+      "w": 1,
+      "l": 0,
+      "t": 0
+    },
+    "SF": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "TB": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "TEN": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    },
+    "WSH": {
+      "w": 0,
+      "l": 0,
+      "t": 0
+    }
+  }
 }
