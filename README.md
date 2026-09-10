@@ -45,6 +45,10 @@ it on the nose. Ties count as half a win, the way a sportsbook settles a win tot
 Your score is the sum across your six teams, shown in the Rosters tab. The scoreboard at the
 top stays on wins.
 
+**A season is won on wins and points together** — total wins plus total points, which is the
+same as adding the wins differential to the points differential. So beating your lines and
+racking up wins both count, and neither on its own settles it.
+
 Mid-season the figure is a **projection**, shown slightly dimmed and labelled `proj. pts`.
 It takes the wins a team has banked and plays out the rest of its schedule at the rate its
 own line implies. That keeps early weeks meaningful instead of absurd: before kickoff every

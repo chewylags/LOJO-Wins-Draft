@@ -451,7 +451,14 @@
         var mid = el('div', 'sb-mid');
         mid.appendChild(el('div', 'sb-vs', 'VS'));
         var tag = leadTag(a, b, live);
-        if (tag) mid.appendChild(el('div', 'sb-tag', tag));
+        if (tag) {
+          var tagEl = el('div', 'sb-tag', tag);
+          if (live) {
+            tagEl.title = 'Wins plus points: ' + state.names[0] + ' ' + fmt(a.w + a.pts)
+              + ', ' + state.names[1] + ' ' + fmt(b.w + b.pts);
+          }
+          mid.appendChild(tagEl);
+        }
         sb.appendChild(mid);
       } else {
         sb.appendChild(side);
@@ -461,9 +468,11 @@
 
   function leadTag(a, b, live) {
     if (live) {
-      if (a.w === b.w) return 'All square';
-      var lead = a.w > b.w ? 0 : 1;
-      return state.names[lead] + ' +' + Math.abs(a.w - b.w);
+      // Wins plus points, the same score that decides a season.
+      var sa = a.w + a.pts, sb = b.w + b.pts;
+      if (sa === sb) return 'All square';
+      var lead = sa > sb ? 0 : 1;
+      return state.names[lead] + ' +' + fmt(Math.abs(sa - sb));
     }
     if (!a.teams.length && !b.teams.length) return null;
     if (a.proj === b.proj) return 'Dead even';
@@ -958,12 +967,15 @@
     return { picks: picks, lines: lines, w: w, l: l, t: t, pts: pts };
   }
 
-  // Points decide it; total wins break a tie.
+  // A season is decided on wins and points together: total wins plus total
+  // points is the score, and the margin between the two scores is the same
+  // as the wins differential plus the points differential.
+  function seasonScore(t) { return t.w + t.pts; }
+
   function seasonWinner(season) {
-    var a = seasonTotals(season, 0), b = seasonTotals(season, 1);
-    if (a.pts !== b.pts) return a.pts > b.pts ? 0 : 1;
-    if (a.w !== b.w) return a.w > b.w ? 0 : 1;
-    return -1;
+    var a = seasonScore(seasonTotals(season, 0)), b = seasonScore(seasonTotals(season, 1));
+    if (a === b) return -1;
+    return a > b ? 0 : 1;
   }
 
   function renderHistoryYears() {
@@ -1015,15 +1027,12 @@
       banner.appendChild(el('span', 'hbanner-win', 'Dead heat'));
     } else {
       var a = seasonTotals(season, 0), b = seasonTotals(season, 1);
-      // Points decide a season; wins only break a tie in them. Either way
-      // the banner shows the margin that actually settled it.
-      var byPoints = Math.abs(a.pts - b.pts);
-      var margin = byPoints || Math.abs(a.w - b.w);
+      var margin = Math.abs(seasonScore(a) - seasonScore(b));
       var wrap = el('span', 'hbanner-win is-p' + winner);
       wrap.appendChild(el('span', 'trophy', '🏆'));
       wrap.appendChild(el('span', null, season.players[winner] + ' by ' + fmt(margin)));
-      wrap.title = season.players[winner] + ' by ' + fmt(margin) + ' '
-        + (byPoints ? 'points' : 'wins — the two were level on points');
+      wrap.title = season.players[0] + ' ' + a.w + ' wins ' + signed(a.pts) + ' pts = ' + fmt(seasonScore(a))
+        + '   ·   ' + season.players[1] + ' ' + b.w + ' wins ' + signed(b.pts) + ' pts = ' + fmt(seasonScore(b));
       banner.appendChild(wrap);
     }
     host.appendChild(banner);
