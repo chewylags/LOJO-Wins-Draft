@@ -72,7 +72,7 @@
   }
   // state.records holds MANUAL entries and always wins; `auto` is the feed
   // published by the GitHub Action and is never persisted or shared.
-  var auto = {}, autoUpdated = null;
+  var auto = {}, autoUpdated = null, autoSource = null;
 
   function recordOf(abbr) {
     var r = state.records[abbr] || auto[abbr];
@@ -749,13 +749,48 @@
       + (res.zero ? ', ' + res.zero + ' still 0-0' : '') + '.');
   }
 
-  /* ---- auto records, published by the nightly GitHub Action -------- */
+  /* ---- auto records: published file + live refresh ----------------- */
 
-  // records.json sits next to this page, so loading it is same-origin:
-  // no CORS, no third-party availability to depend on at page load.
-  // A GitHub Action refreshes it every morning.
-  function loadAutoRecords(announce) {
-    if (announce) note('', 'Checking for updated records…');
+  // Two sources feed `auto`, and the newer one wins:
+  //   1. records.json, rewritten by a scheduled GitHub Action.
+  //   2. a live fetch straight from ESPN, on demand.
+  // ESPN sends access-control-allow-origin: *, so (2) works from the page;
+  // (1) is what a cold visitor sees without pressing anything.
+  var LIVE_KEY = 'lojo-wins-draft-live-v1';
+  var VALID = { has: function (a) { return !!TEAM_BY_ABBR[a]; } };
+
+  function normalise(records) {
+    var out = {};
+    Object.keys(records || {}).forEach(function (abbr) {
+      if (!TEAM_BY_ABBR[abbr]) return;
+      var r = records[abbr];
+      out[abbr] = { w: clampGame(r.w), l: clampGame(r.l), t: clampGame(r.t) };
+    });
+    return out;
+  }
+
+  // Keep whichever feed is newer, so a live refresh isn't undone by the
+  // published file and vice versa.
+  //
+  // Merge rather than replace: some sources (the scoreboard especially)
+  // only describe the teams playing this week, and adopting one of those
+  // wholesale would drop every other team's record.
+  function adopt(feed) {
+    if (!feed || !feed.records) return false;
+    if (autoUpdated && feed.updated && new Date(feed.updated) <= new Date(autoUpdated)) return false;
+    var incoming = normalise(feed.records);
+    Object.keys(incoming).forEach(function (abbr) { auto[abbr] = incoming[abbr]; });
+    autoUpdated = feed.updated || null;
+    autoSource = feed.live ? 'live' : 'published';
+    renderAll();
+    return true;
+  }
+
+  function cachedLive() {
+    try { return JSON.parse(localStorage.getItem(LIVE_KEY)); } catch (e) { return null; }
+  }
+
+  function loadPublished() {
     return fetch('records.json?t=' + Date.now(), { cache: 'no-store' })
       .then(function (res) {
         if (!res.ok) throw new Error('http ' + res.status);
@@ -763,31 +798,67 @@
       })
       .then(function (data) {
         if (!data || !data.records) throw new Error('malformed');
-        auto = {};
-        Object.keys(data.records).forEach(function (abbr) {
-          var r = data.records[abbr];
-          if (TEAM_BY_ABBR[abbr]) auto[abbr] = { w: clampGame(r.w), l: clampGame(r.l), t: clampGame(r.t) };
-        });
-        autoUpdated = data.updated || null;
-        renderAll();
-        if (announce) note('ok', autoSummary());
+        adopt(data);
       })
-      .catch(function () {
-        if (announce) note('bad', 'Could not read records.json. Paste a standings table instead.');
-      });
+      .catch(function () { /* the live cache or a paste can still cover it */ });
+    }
+
+  // Try each ESPN source until one yields records, newest-shape-first.
+  function fetchLive() {
+    var i = 0;
+    function attempt() {
+      if (i >= RecordsParse.SOURCES.length) return Promise.reject(new Error('all sources failed'));
+      var url = RecordsParse.SOURCES[i++];
+      return fetch(url, { cache: 'no-store' })
+        .then(function (res) {
+          if (!res.ok) throw new Error('http ' + res.status);
+          return res.json();
+        })
+        .then(function (json) {
+          var records = RecordsParse.harvest(json, VALID);
+          if (!Object.keys(records).length) throw new Error('nothing recognised');
+          return records;
+        })
+        .catch(attempt);
+    }
+    return attempt();
+  }
+
+  function refreshLive() {
+    var btn = $('#btnRefresh');
+    btn.disabled = true;
+    note('', 'Fetching the latest scores…');
+
+    return fetchLive().then(function (records) {
+      var feed = {
+        updated: new Date().toISOString(),
+        records: records,
+        live: true,
+        teams: Object.keys(records).length,
+        played: RecordsParse.played(records),
+      };
+      try { localStorage.setItem(LIVE_KEY, JSON.stringify(feed)); } catch (e) { /* ignore */ }
+      autoUpdated = null;               // a deliberate refresh always wins
+      adopt(feed);
+      note('ok', autoSummary());
+      toast('Records updated');
+    }).catch(function () {
+      note('bad', 'Could not reach ESPN just now. Try again, or paste a standings table below.');
+    }).then(function () { btn.disabled = false; });
   }
 
   function autoSummary() {
     var teams = Object.keys(auto).length;
-    if (!teams) return 'No auto-updated records yet.';
+    if (!teams) return 'No records loaded yet — press Update now.';
     var when = autoUpdated ? new Date(autoUpdated) : null;
-    var played = 0;
+    var games = 0;
     Object.keys(auto).forEach(function (a) {
       var r = auto[a];
-      if (r.w + r.l + r.t > 0) played++;
+      if (r.w + r.l + r.t > 0) games++;
     });
-    return teams + ' teams auto-updated' + (played ? ', ' + played + ' with games played' : '')
-      + (when && !isNaN(when) ? ' · ' + when.toLocaleDateString() + ' ' + when.toLocaleTimeString() : '');
+    return (autoSource === 'live' ? 'Live' : 'Published')
+      + ' · ' + teams + ' teams, ' + games + ' with games played'
+      + (when && !isNaN(when) ? ' · ' + when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '');
   }
 
   /* ---------------- wiring ---------------------------------------- */
@@ -842,7 +913,7 @@
       if (state.editLines) { ui.tab = 'board'; $$('#tabs .tab')[0].click(); }
     });
 
-    $('#btnRefresh').addEventListener('click', function () { loadAutoRecords(true); });
+    $('#btnRefresh').addEventListener('click', refreshLive);
     $('#btnPaste').addEventListener('click', importPasted);
     $('#btnClearRecords').addEventListener('click', function () {
       if (!confirm('Clear every team record?')) return;
@@ -894,7 +965,11 @@
     bind();
     renderAll();
     syncHash();
-    loadAutoRecords(false).then(function () { note('', autoSummary()); });
+    // Published file first as the base — it always describes all 32 teams —
+    // then any cached live refresh merged on top if it is more recent.
+    loadPublished()
+      .then(function () { adopt(cachedLive()); })
+      .then(function () { note('', autoSummary()); });
     if (fromLink) toast('Draft loaded from link');
   }
 

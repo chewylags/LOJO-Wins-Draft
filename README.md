@@ -15,12 +15,19 @@ way. Each side ends up with six teams.
 off the board so nobody's Rams fandom tips the scales. It's a toggle on the Setup tab if you
 ever want them back in.
 
-**Records update themselves.** A scheduled GitHub Action (`.github/workflows/records.yml`)
-runs every morning, fetches the current standings, and commits them to `records.json`. The
-page reads that file from its own origin, which is the whole point: fetching a sports API
-directly from the browser is at the mercy of CORS, while a fetch from a CI runner is not.
+**Records update themselves**, from two directions:
 
-That leaves two manual paths, both under Setup → Records:
+- A scheduled Action (`.github/workflows/records.yml`) fetches the standings and commits
+  them to `records.json` — every morning, and every half hour while games are being played.
+  That file is what someone sees on a cold load without pressing anything.
+- **Update now** (Setup → Records) fetches the live scores straight from the page, for when
+  you want the early Sunday slate reflected while the late one is still going. ESPN serves
+  `access-control-allow-origin: *`, so the browser is allowed to ask it directly.
+
+Whichever is more recent wins, and feeds merge rather than replace — some endpoints only
+describe the teams playing this week, so overwriting wholesale would drop everyone else.
+
+Two manual paths remain, both under Setup → Records:
 
 - **Paste a standings table** — copy the standings off ESPN, NFL.com or anywhere else and
   drop the text in. Team names and their W-L are picked out automatically; surrounding
@@ -77,5 +84,6 @@ that a fresh browser starts from, edit the `line` values in `teams.js`.
 | `styles.css` | All styling |
 | `teams.js` | The 32 teams — colors, divisions, default win totals |
 | `app.js` | Draft logic, board rendering, URL encoding, record loading |
-| `records.json` | Current records, rewritten each morning by the Action |
-| `scripts/fetch-records.mjs` | Fetches standings; runs in CI, never in the browser |
+| `records-parse.js` | Standings parser, shared by the page and the CI script |
+| `records.json` | Current records, rewritten by the scheduled Action |
+| `scripts/fetch-records.mjs` | Fetches standings in CI and commits `records.json` |

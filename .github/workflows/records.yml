@@ -2,8 +2,14 @@ name: Update NFL records
 
 on:
   schedule:
-    # 11:15 UTC daily — after Sunday and Monday night games have finished.
-    - cron: '15 11 * * *'
+    # Times are UTC. The windows cover live game slates so the published
+    # file stays close to current even for someone who never presses
+    # Update now; the daily run is the catch-all.
+    - cron: '15 11 * * *'        # every morning, after everything has settled
+    - cron: '*/30 17-23 * * 0'   # Sunday, early through late afternoon windows
+    - cron: '*/30 0-5 * * 1'     # Sunday night football, into Monday UTC
+    - cron: '*/30 0-5 * * 2'     # Monday night football
+    - cron: '*/30 0-5 * * 5'     # Thursday night football
   workflow_dispatch:
 
 permissions:
