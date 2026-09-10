@@ -341,9 +341,9 @@
       var d = idx === 0 ? a : b;
       var side = el('div', 'sb-side p' + idx + (idx === 1 ? ' right' : ''));
       side.appendChild(el('div', 'sb-name', state.names[idx]));
-      side.appendChild(el('div', 'sb-big', live ? signed(d.pts) : fmt(d.proj)));
+      side.appendChild(el('div', 'sb-big', live ? String(d.w) : fmt(d.proj)));
       side.appendChild(el('div', 'sb-sub', live
-        ? (d.done ? 'points' : 'proj. pts') + ' · ' + d.w + ' wins'
+        ? 'wins · ' + fmt(d.proj) + ' projected'
         : (d.teams.length + ' of ' + state.size + ' drafted')));
       if (idx === 0) {
         sb.appendChild(side);
@@ -360,9 +360,9 @@
 
   function leadTag(a, b, live) {
     if (live) {
-      if (a.pts === b.pts) return 'All square';
-      var lead = a.pts > b.pts ? 0 : 1;
-      return state.names[lead] + ' +' + fmt(Math.abs(a.pts - b.pts));
+      if (a.w === b.w) return 'All square';
+      var lead = a.w > b.w ? 0 : 1;
+      return state.names[lead] + ' +' + Math.abs(a.w - b.w);
     }
     if (!a.teams.length && !b.teams.length) return null;
     if (a.proj === b.proj) return 'Dead even';
@@ -475,8 +475,8 @@
     head.appendChild(el('h2', 'panel-title', state.names[idx]));
 
     var totals = el('div', 'rt-totals');
-    totals.appendChild(numBlock(d.gp ? signed(d.pts) : '—', d.done ? 'points' : 'proj. pts'));
     totals.appendChild(numBlock(d.gp ? String(d.w) : fmt(d.proj), d.gp ? 'wins' : 'projected'));
+    totals.appendChild(numBlock(d.gp ? signed(d.pts) : '—', d.done ? 'points' : 'proj. pts'));
     head.appendChild(totals);
     panel.appendChild(head);
 

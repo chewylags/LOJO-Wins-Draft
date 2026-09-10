@@ -42,7 +42,8 @@ land exactly, so there are no zeroes unless you enter a whole-number line and th
 it on the nose. Ties count as half a win, the way a sportsbook settles a win total, so a
 10-6-1 finish against a 10.5 line pushes to 0.
 
-Your score is the sum across your six teams, shown in the Rosters tab and on the scoreboard.
+Your score is the sum across your six teams, shown in the Rosters tab. The scoreboard at the
+top stays on wins.
 
 Mid-season the figure is a **projection**, shown slightly dimmed and labelled `proj. pts`.
 It takes the wins a team has banked and plays out the rest of its schedule at the rate its
