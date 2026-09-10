@@ -23,5 +23,28 @@
 ------------------------------------------------------------------ */
 
 const HISTORY = [
-  // 2023, 2024 and 2025 go here, newest first.
+  {
+    season: '2023',
+    players: ['Josh', 'Logan'],
+    // Josh picked first, so Josh, Logan, Logan, then alternating — the
+    // same rule as now. The separate "worst teams" draft that year is
+    // deliberately not included.
+    picks: [
+      { abbr: 'KC',  by: 0, line: 11.5, w: 11, l: 6,  t: 0 },
+      { abbr: 'PHI', by: 1, line: 10.5, w: 11, l: 6,  t: 0 },
+      { abbr: 'CIN', by: 1, line: 10.5, w: 9,  l: 8,  t: 0 },
+      { abbr: 'BUF', by: 0, line: 10.5, w: 11, l: 6,  t: 0 },
+      { abbr: 'DAL', by: 1, line: 9.5,  w: 12, l: 5,  t: 0 },
+      { abbr: 'JAX', by: 0, line: 9.5,  w: 9,  l: 8,  t: 0 },
+      // The draft list records this pick as the Jets, but the results
+      // list has the Packers — going with the one that carries a record.
+      // The note gives no line for them; 8.5 was the 2023 market number.
+      { abbr: 'GB',  by: 1, line: 8.5,  w: 9,  l: 8,  t: 0 },
+      { abbr: 'BAL', by: 0, line: 10.5, w: 13, l: 4,  t: 0 },
+      { abbr: 'DET', by: 1, line: 9.5,  w: 12, l: 5,  t: 0 },
+      { abbr: 'LAC', by: 0, line: 9.5,  w: 5,  l: 12, t: 0 },
+      { abbr: 'NO',  by: 1, line: 9.5,  w: 9,  l: 8,  t: 0 },
+      { abbr: 'MIA', by: 0, line: 9.5,  w: 11, l: 6,  t: 0 },
+    ],
+  },
 ];
