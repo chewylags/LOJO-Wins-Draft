@@ -33,6 +33,27 @@
 
 const HISTORY = [
   {
+    season: '2025',
+    players: ['Josh', 'Logan'],
+    // Back to six teams each; Logan picked first. No swaps this year.
+    picks: [
+      { abbr: 'BUF', by: 1, line: 11.5, w: 12, l: 5,  t: 0 },
+      { abbr: 'BAL', by: 0, line: 11.5, w: 8,  l: 9,  t: 0 },
+      { abbr: 'PHI', by: 0, line: 11.5, w: 11, l: 6,  t: 0 },
+      { abbr: 'KC',  by: 1, line: 11.5, w: 6,  l: 11, t: 0 },
+      { abbr: 'DET', by: 0, line: 10.5, w: 9,  l: 8,  t: 0 },
+      // 9-7-1 against a 9.5 line: the tie counts as half a win, so this
+      // lands exactly on the number and pushes for 0.
+      { abbr: 'GB',  by: 1, line: 9.5,  w: 9,  l: 7,  t: 1 },
+      { abbr: 'DEN', by: 0, line: 9.5,  w: 14, l: 3,  t: 0 },
+      { abbr: 'TB',  by: 1, line: 9.5,  w: 8,  l: 9,  t: 0 },
+      { abbr: 'WSH', by: 0, line: 9.5,  w: 5,  l: 12, t: 0 },
+      { abbr: 'CIN', by: 1, line: 9.5,  w: 6,  l: 11, t: 0 },
+      { abbr: 'LAC', by: 0, line: 9.5,  w: 11, l: 6,  t: 0 },
+      { abbr: 'NE',  by: 1, line: 8.5,  w: 14, l: 3,  t: 0 },
+    ],
+  },
+  {
     season: '2024',
     players: ['Josh', 'Logan'],
     // Eight teams each this year. Josh picked first. Records are the final
