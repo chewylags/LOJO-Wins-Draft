@@ -27,6 +27,11 @@ ever want them back in.
 Whichever is more recent wins, and feeds merge rather than replace — some endpoints only
 describe the teams playing this week, so overwriting wholesale would drop everyone else.
 
+**Undo and redo** sit together in the header and grey out when there is nothing to do.
+Redo puts back the pick you just undid, along with any swap that was on it; making a
+different pick abandons the redo trail, as in any editor. The trail is per-session — a
+reload starts clean.
+
 On a phone, **pull down from the top** to refresh — the same gesture as anywhere else.
 That matters if you add the site to your Home Screen: it launches without browser chrome,
 so the pull is the only reload affordance there.

@@ -37,9 +37,14 @@
       <button class="btn btn-ghost" id="btnShare" type="button" title="Copy a link that contains the whole draft">
         <span class="ico">🔗</span><span class="lbl">Share</span>
       </button>
-      <button class="btn btn-ghost" id="btnUndo" type="button" title="Undo the last pick">
-        <span class="ico">↩︎</span><span class="lbl">Undo</span>
-      </button>
+      <div class="btn-group">
+        <button class="btn btn-ghost" id="btnUndo" type="button" title="Undo the last pick">
+          <span class="ico">↩︎</span><span class="lbl">Undo</span>
+        </button>
+        <button class="btn btn-ghost" id="btnRedo" type="button" title="Redo the pick you just undid" disabled>
+          <span class="ico">↪︎</span>
+        </button>
+      </div>
       <button class="btn btn-ghost" id="btnHistory" type="button" title="Past seasons">
         <span class="ico">🏆</span><span class="lbl">History</span>
       </button>

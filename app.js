@@ -715,6 +715,7 @@
   }
 
   function renderAll() {
+    renderUndoRedo();
     renderClock();
     renderScoreboard();
     renderBoard();
@@ -729,6 +730,7 @@
     if (!team || isComplete() || ownerOf(abbr) !== -1 || isLocked(team)) return;
     var who = onClock();
     state.picks.push(abbr);
+    clearRedo();
     ui.flash = abbr;
     save();
     renderAll();
@@ -736,12 +738,40 @@
     toast(state.names[who] + ' takes the ' + team.short);
   }
 
+  // Undone picks, most recent last, so they can be put back. Held in
+  // memory only: a reload is a clean slate, as it is in any editor.
+  var redoStack = [];
+
+  function clearRedo() { redoStack = []; }
+
   function undo() {
-    if (!state.picks.length) { toast('Nothing to undo'); return; }
+    if (!state.picks.length) return;
     var abbr = state.picks.pop();
+    // Keep any swap made on that slot, so redo restores the pick intact.
+    redoStack.push({ abbr: abbr, swap: state.swaps[abbr] || null });
     pruneSwaps();
     save(); renderAll();
     toast(TEAM_BY_ABBR[abbr].short + ' back on the board');
+  }
+
+  function redo() {
+    if (!redoStack.length) return;
+    var entry = redoStack.pop();
+    // The board may have moved on — only put it back if it still can be.
+    if (isComplete() || ownerOf(entry.abbr) !== -1 || isSwappedOut(entry.abbr)) {
+      renderAll();
+      toast('That pick is no longer available');
+      return;
+    }
+    state.picks.push(entry.abbr);
+    if (entry.swap) state.swaps[entry.abbr] = entry.swap;
+    save(); renderAll();
+    toast(TEAM_BY_ABBR[entry.abbr].short + ' picked again');
+  }
+
+  function renderUndoRedo() {
+    $('#btnUndo').disabled = !state.picks.length;
+    $('#btnRedo').disabled = !redoStack.length;
   }
 
   function copy(text, okMsg) {
@@ -776,6 +806,7 @@
         var cut = Math.min.apply(null, drafted.map(function (a) { return state.picks.indexOf(a); }));
         state.picks = state.picks.slice(0, cut);
         pruneSwaps();
+        clearRedo();
       }
     }
     state.lockNFCW = on;
@@ -786,7 +817,9 @@
     n = parseInt(n, 10);
     if (!isFinite(n) || n < 1 || n > 14) { renderSetup(); return; }
     state.size = n;
-    if (state.picks.length > n * 2) { state.picks = state.picks.slice(0, n * 2); pruneSwaps(); }
+    if (state.picks.length > n * 2) {
+      state.picks = state.picks.slice(0, n * 2); pruneSwaps(); clearRedo();
+    }
     save(); renderAll();
   }
 
@@ -794,6 +827,7 @@
     if (state.first === i) return;
     if (state.picks.length && !confirm('Changing who picks first reshuffles every pick already made. Continue?')) return;
     state.first = i;
+    clearRedo();
     save(); renderAll();
   }
 
@@ -811,6 +845,7 @@
     reader.onload = function () {
       try {
         state = sanitize(JSON.parse(String(reader.result)));
+        clearRedo();
         save(); renderAll(); toast('Draft imported');
       } catch (e) { toast('That file could not be read'); }
     };
@@ -1272,6 +1307,7 @@
 
   function adoptPublished(pub) {
     state = pub.state;
+    clearRedo();
     save();
     renderAll();
     toast('Loaded the published draft');
@@ -1390,6 +1426,7 @@
 
   function bind() {
     $('#btnUndo').addEventListener('click', undo);
+    $('#btnRedo').addEventListener('click', redo);
 
     $('#swapClose').addEventListener('click', closeSwap);
     $('#swapUndo').addEventListener('click', undoSwap);
@@ -1445,6 +1482,8 @@
     $('#btnFlip').addEventListener('click', function () {
       if (state.picks.length && !confirm('Flipping resets the picks already made. Continue?')) return;
       state.picks = [];
+      state.swaps = {};
+      clearRedo();
       state.first = Math.random() < 0.5 ? 0 : 1;
       save(); renderAll();
       toast('🪙 ' + state.names[state.first] + ' wins the flip — first pick');
@@ -1474,11 +1513,12 @@
 
     $('#btnResetPicks').addEventListener('click', function () {
       if (!confirm('Clear all picks? Names, lines and records stay put.')) return;
-      state.picks = []; state.swaps = {}; save(); renderAll(); toast('Board wiped clean');
+      state.picks = []; state.swaps = {}; clearRedo(); save(); renderAll(); toast('Board wiped clean');
     });
     $('#btnResetAll').addEventListener('click', function () {
       if (!confirm('Reset everything back to defaults?')) return;
       state = defaultState();
+      clearRedo();
       save();
       renderAll();
       toast('Fresh start');
