@@ -33,6 +33,37 @@
 
 const HISTORY = [
   {
+    season: '2024',
+    players: ['Josh', 'Logan'],
+    // Eight teams each this year. Josh picked first. Records are the final
+    // 2024 regular season; the two swapped slots are split at the week the
+    // trade took effect, which reproduces the mid-season note exactly.
+    picks: [
+      { abbr: 'KC',  by: 0, line: 11.5, w: 15, l: 2,  t: 0 },
+      { abbr: 'BAL', by: 1, line: 10.5, w: 12, l: 5,  t: 0 },
+      { abbr: 'CIN', by: 1, line: 10.5, w: 9,  l: 8,  t: 0 },
+      { abbr: 'DET', by: 0, line: 10.5, w: 15, l: 2,  t: 0 },
+      { abbr: 'NYJ', by: 1, line: 10.5, w: 5,  l: 12, t: 0 },
+      { abbr: 'PHI', by: 0, line: 10.5, w: 14, l: 3,  t: 0 },
+      { abbr: 'DAL', by: 1, line: 9.5,  w: 7,  l: 10, t: 0 },
+      { abbr: 'HOU', by: 0, line: 9.5,  w: 10, l: 7,  t: 0 },
+      { abbr: 'BUF', by: 1, line: 9.5,  w: 13, l: 4,  t: 0 },
+      // Dolphins 1-3 through week 4, then Tampa Bay from week 5: their
+      // 10-7 less the 3-1 they had already banked.
+      { abbr: 'TB',  by: 0, line: 9.5,  w: 7,  l: 6,  t: 0,
+        replaced: { abbr: 'MIA', w: 1, l: 3, t: 0, note: 'swapped after week 4' } },
+      { abbr: 'GB',  by: 1, line: 9.5,  w: 11, l: 6,  t: 0 },
+      { abbr: 'ATL', by: 0, line: 9.5,  w: 8,  l: 9,  t: 0 },
+      { abbr: 'CHI', by: 1, line: 8.5,  w: 5,  l: 12, t: 0 },
+      // Jaguars 0-3 through week 3, then Minnesota from week 4: their
+      // 14-3 less the 3-0 they had already banked.
+      { abbr: 'MIN', by: 0, line: 8.5,  w: 11, l: 3,  t: 0,
+        replaced: { abbr: 'JAX', w: 0, l: 3, t: 0, note: 'swapped after week 3' } },
+      { abbr: 'LAC', by: 1, line: 8.5,  w: 11, l: 6,  t: 0 },
+      { abbr: 'IND', by: 0, line: 8.5,  w: 8,  l: 9,  t: 0 },
+    ],
+  },
+  {
     season: '2023',
     players: ['Josh', 'Logan'],
     // Josh picked first, so Josh, Logan, Logan, then alternating — the
@@ -46,12 +77,12 @@ const HISTORY = [
       { abbr: 'DAL', by: 1, line: 9.5,  w: 12, l: 5,  t: 0 },
       { abbr: 'JAX', by: 0, line: 9.5,  w: 9,  l: 8,  t: 0 },
       // Drafted the Jets; Aaron Rodgers tore his Achilles four snaps into
-      // week 1, so the QB rule applied and the Packers came in. The line is
-      // the Jets' 9.5, the team drafted. The 2023 note recorded only the
-      // Packers' full season rather than splitting it at the swap, so no
-      // pre-swap record is given and 9-8 stands as the whole slot.
-      { abbr: 'GB',  by: 1, line: 9.5,  w: 9,  l: 8,  t: 0,
-        replaced: { abbr: 'NYJ', note: 'Aaron Rodgers, week 1' } },
+      // week 1, so the QB rule applied and the Packers came in. The Jets
+      // won that opener anyway (22-16 over Buffalo), so the slot is their
+      // 1-0 plus Green Bay's 8-8 from week 2 on — which comes to the same
+      // 9-8 the Packers posted over the full season.
+      { abbr: 'GB',  by: 1, line: 9.5,  w: 8,  l: 8,  t: 0,
+        replaced: { abbr: 'NYJ', w: 1, l: 0, t: 0, note: 'Aaron Rodgers, week 1' } },
       { abbr: 'BAL', by: 0, line: 10.5, w: 13, l: 4,  t: 0 },
       { abbr: 'DET', by: 1, line: 9.5,  w: 12, l: 5,  t: 0 },
       { abbr: 'LAC', by: 0, line: 9.5,  w: 5,  l: 12, t: 0 },
