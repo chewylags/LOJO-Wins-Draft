@@ -824,11 +824,24 @@
     if (fromLink) return Promise.resolve();     // an explicit link is deliberate
     return loadPublishedDraft().then(function (pub) {
       if (!pub || !pub.publishedAt || pub.publishedAt <= localAt) return;
-      state = pub.state;
-      save();
-      renderAll();
-      toast('Loaded the published draft');
+      adoptPublished(pub);
     });
+  }
+
+  // Deliberate re-sync: take the published draft whatever this browser has.
+  // The way back after diverging, without waiting for a fresh publish.
+  function pullPublishedDraft() {
+    return loadPublishedDraft().then(function (pub) {
+      if (!pub) { toast('No draft has been published yet'); return; }
+      adoptPublished(pub);
+    });
+  }
+
+  function adoptPublished(pub) {
+    state = pub.state;
+    save();
+    renderAll();
+    toast('Loaded the published draft');
   }
 
   /* ---------------- new build detection ---------------------------- */
@@ -1000,6 +1013,7 @@
       toast('Manual entries cleared');
     });
 
+    $('#btnLoadPublished').addEventListener('click', pullPublishedDraft);
     $('#btnExport').addEventListener('click', exportFile);
     $('#btnImport').addEventListener('click', function () { $('#fileInput').click(); });
     $('#fileInput').addEventListener('change', function (e) {
@@ -1013,7 +1027,13 @@
     });
     $('#btnResetAll').addEventListener('click', function () {
       if (!confirm('Reset everything back to defaults?')) return;
-      state = defaultState(); save(); renderAll(); toast('Fresh start');
+      state = defaultState();
+      save();
+      renderAll();
+      toast('Fresh start');
+      // Come back to the published draft if there is one, rather than
+      // sitting blank until somebody publishes again.
+      considerPublishedDraft(null, 0);
     });
 
     window.addEventListener('hashchange', function () {

@@ -111,6 +111,19 @@ on load and on every pull-to-refresh; if it names a newer build, the app reloads
 cannot guarantee. The draft lives in the URL hash, so it survives the trip, and the app
 refuses to redirect twice for the same build so a stale cache can't cause a reload loop.
 
+## One host, not two
+
+The site is static, so it will run anywhere — but **pick one URL and stick to it**. Browsers
+key saved state to the origin, so `github.io` and a Vercel deployment each keep their own
+separate draft, and a Home Screen app saved from one knows nothing about the other. That is
+the same trap as sharing a link with its `#…` stripped.
+
+This repo is wired for GitHub Pages: the deploy workflow runs `scripts/stamp-build.mjs`,
+which writes `version.txt` and versions the asset URLs so the running app can notice a new
+deploy. A plain Vercel import of the repo does not run that step, so its `build` meta stays
+`dev` and the app disables its update check (harmlessly — no errors, just no auto-update).
+Everything else, records included, works the same on either.
+
 ## Running it
 
 It's plain HTML, CSS and JavaScript — no build step, no dependencies.
