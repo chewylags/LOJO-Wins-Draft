@@ -34,8 +34,22 @@ so the pull is the only reload affordance there.
 Records can also be typed by hand on the Rosters tab. Anything typed overrides the feed for
 that team until *Clear manual entries*.
 
-Each team then shows how far ahead of or behind its line it's running: a team on a 10.5 line
-sitting at 6-2 reads `+0.6`, because eight games in it "should" have about 5.4 wins.
+## The point contest
+
+Every team scores whole wins clear of its line. On a 10.5-win line, 11 wins is **+1**, 12 is
+**+2**, 13 is **+3**; 10 wins is **-1**, 9 is **-2**, 8 is **-3**. A half-point line can't
+land exactly, so there are no zeroes unless you enter a whole-number line and the team hits
+it on the nose. Ties count as half a win, the way a sportsbook settles a win total, so a
+10-6-1 finish against a 10.5 line pushes to 0.
+
+Your score is the sum across your six teams, shown in the Rosters tab and on the scoreboard.
+
+Mid-season the figure is a **projection**, shown slightly dimmed and labelled `proj. pts`.
+It takes the wins a team has banked and plays out the rest of its schedule at the rate its
+own line implies. That keeps early weeks meaningful instead of absurd: before kickoff every
+team sits at 0, one win in week 1 is +1 and one loss is -1, and the number converges on the
+real result as games accumulate. Once a team has played all 17, it's no longer a projection
+and the points are final.
 
 The records job commits with `GITHUB_TOKEN`, and GitHub deliberately does not let such a
 push trigger other workflows, so the Pages deploy is chained to that job finishing via a

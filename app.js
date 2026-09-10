@@ -78,6 +78,42 @@
     var r = state.records[abbr] || auto[abbr];
     return r ? { w: r.w | 0, l: r.l | 0, t: r.t | 0 } : { w: 0, l: 0, t: 0 };
   }
+  /* ---------------- point contest --------------------------------- */
+
+  // A tie counts as half a win, the way a sportsbook settles a win total.
+  function effectiveWins(r) { return r.w + r.t * 0.5; }
+
+  // Points a team is worth: whole wins clear of its line. On a 10.5 line
+  // 11 wins is +1, 12 is +2, 10 is -1, 9 is -2. Half-point lines can't
+  // push; a whole-number line landed exactly is worth 0.
+  function pointsFrom(wins, line) {
+    if (wins > line) return wins - Math.floor(line);
+    if (wins < line) return wins - Math.ceil(line);
+    return 0;
+  }
+
+  // Where a team is headed: wins banked, plus the rest of its schedule at
+  // the rate its own line implies. Anchoring the remainder to the line
+  // (rather than to results so far) keeps week 1 sane — one loss nudges a
+  // 10.5-win team to 10, it doesn't project them to 0.
+  function projectedWins(team) {
+    var r = recordOf(team.abbr), gp = r.w + r.l + r.t, eff = effectiveWins(r);
+    if (gp >= GAMES_IN_SEASON) return eff;
+    return eff + lineOf(team) * ((GAMES_IN_SEASON - gp) / GAMES_IN_SEASON);
+  }
+
+  function isFinished(team) {
+    var r = recordOf(team.abbr);
+    return r.w + r.l + r.t >= GAMES_IN_SEASON;
+  }
+
+  // Final once the 17 games are in; a rounded projection until then.
+  function pointsFor(team) {
+    var line = lineOf(team);
+    if (isFinished(team)) return pointsFrom(effectiveWins(recordOf(team.abbr)), line);
+    return Math.round(pointsFrom(projectedWins(team), line));
+  }
+
   function isLocked(team) {
     return state.lockNFCW && team.div === LOCKED_DIVISION;
   }
@@ -285,13 +321,15 @@
   /* ---------------- render: scoreboard ---------------------------- */
 
   function totalsFor(idx) {
-    var teams = teamsOf(idx), proj = 0, w = 0, l = 0, t = 0;
+    var teams = teamsOf(idx), proj = 0, w = 0, l = 0, t = 0, pts = 0, done = teams.length > 0;
     teams.forEach(function (team) {
       proj += lineOf(team);
       var r = recordOf(team.abbr);
       w += r.w; l += r.l; t += r.t;
+      pts += pointsFor(team);
+      if (!isFinished(team)) done = false;
     });
-    return { teams: teams, proj: proj, w: w, l: l, t: t, gp: w + l + t };
+    return { teams: teams, proj: proj, w: w, l: l, t: t, gp: w + l + t, pts: pts, done: done };
   }
 
   function renderScoreboard() {
@@ -303,9 +341,9 @@
       var d = idx === 0 ? a : b;
       var side = el('div', 'sb-side p' + idx + (idx === 1 ? ' right' : ''));
       side.appendChild(el('div', 'sb-name', state.names[idx]));
-      side.appendChild(el('div', 'sb-big', live ? String(d.w) : fmt(d.proj)));
+      side.appendChild(el('div', 'sb-big', live ? signed(d.pts) : fmt(d.proj)));
       side.appendChild(el('div', 'sb-sub', live
-        ? 'wins · ' + fmt(d.proj) + ' projected'
+        ? (d.done ? 'points' : 'proj. pts') + ' · ' + d.w + ' wins'
         : (d.teams.length + ' of ' + state.size + ' drafted')));
       if (idx === 0) {
         sb.appendChild(side);
@@ -322,9 +360,9 @@
 
   function leadTag(a, b, live) {
     if (live) {
-      if (a.w === b.w) return 'All square';
-      var lead = a.w > b.w ? 0 : 1;
-      return state.names[lead] + ' +' + Math.abs(a.w - b.w);
+      if (a.pts === b.pts) return 'All square';
+      var lead = a.pts > b.pts ? 0 : 1;
+      return state.names[lead] + ' +' + fmt(Math.abs(a.pts - b.pts));
     }
     if (!a.teams.length && !b.teams.length) return null;
     if (a.proj === b.proj) return 'Dead even';
@@ -437,8 +475,8 @@
     head.appendChild(el('h2', 'panel-title', state.names[idx]));
 
     var totals = el('div', 'rt-totals');
-    totals.appendChild(numBlock(fmt(d.proj), 'projected'));
-    totals.appendChild(numBlock(d.gp ? String(d.w) : '—', 'wins'));
+    totals.appendChild(numBlock(d.gp ? signed(d.pts) : '—', d.done ? 'points' : 'proj. pts'));
+    totals.appendChild(numBlock(d.gp ? String(d.w) : fmt(d.proj), d.gp ? 'wins' : 'projected'));
     head.appendChild(totals);
     panel.appendChild(head);
 
@@ -455,8 +493,8 @@
     var foot = el('div', 'rfoot');
     foot.appendChild(el('span', null, d.teams.length + '/' + state.size + ' teams'));
     foot.appendChild(el('span', null, d.gp
-      ? d.w + '-' + d.l + (d.t ? '-' + d.t : '') + '  ·  ' + signed(d.w - pace(d)) + ' vs pace'
-      : 'season not started'));
+      ? d.w + '-' + d.l + (d.t ? '-' + d.t : '') + '  ·  ' + fmt(d.proj) + ' win lines'
+      : fmt(d.proj) + ' projected wins'));
     panel.appendChild(foot);
     return panel;
   }
@@ -466,16 +504,6 @@
     b.appendChild(el('div', 'rt-num', value));
     b.appendChild(el('span', 'rt-lbl', label));
     return b;
-  }
-
-  // Wins a roster "should" have by now, given each line and games played.
-  function pace(d) {
-    var expected = 0;
-    d.teams.forEach(function (team) {
-      var r = recordOf(team.abbr), gp = r.w + r.l + r.t;
-      expected += lineOf(team) * (gp / GAMES_IN_SEASON);
-    });
-    return expected;
   }
 
   function rosterRow(team) {
@@ -500,9 +528,14 @@
     li.appendChild(rec);
 
     var gp = r.w + r.l + r.t;
-    var diff = gp ? r.w - lineOf(team) * (gp / GAMES_IN_SEASON) : 0;
-    var cls = !gp ? 'even' : diff > 0.05 ? 'up' : diff < -0.05 ? 'down' : 'even';
-    li.appendChild(el('span', 'pace ' + cls, gp ? signed(diff) : '—'));
+    var pts = pointsFor(team), done = isFinished(team);
+    var cls = pts > 0 ? 'up' : pts < 0 ? 'down' : 'even';
+    var cell = el('span', 'pts ' + cls + (done ? '' : ' is-proj'), gp ? signed(pts) : '—');
+    cell.title = gp
+      ? (done ? effectiveWins(r) + ' wins' : 'on track for ' + Math.round(projectedWins(team)) + ' wins')
+        + ' against a ' + fmt(lineOf(team)) + ' line'
+      : 'No games played yet';
+    li.appendChild(cell);
     return li;
   }
 
