@@ -151,12 +151,25 @@
         </label>
 
         <div class="panel-head panel-head-sub"><h3 class="panel-title sm">Records</h3></div>
-        <p class="hint">Enter each team's record by hand on the Rosters tab, or try pulling live records from ESPN's public scoreboard.</p>
+        <p class="hint">Type records by hand on the Rosters tab, paste a standings table, or try pulling them live from ESPN.</p>
         <div class="btnrow">
-          <button class="btn" id="btnSync" type="button">⟳ Sync live records</button>
+          <button class="btn" id="btnSync" type="button">⟳ Sync live from ESPN</button>
           <button class="btn btn-ghost" id="btnClearRecords" type="button">Clear records</button>
         </div>
         <p class="syncnote" id="syncNote" role="status" aria-live="polite"></p>
+
+        <details class="paste" id="pasteWrap">
+          <summary>Paste a standings table</summary>
+          <p class="hint">
+            Select the standings on ESPN, NFL.com or anywhere else, copy, and drop it in below.
+            Team names and their W-L are picked out automatically — the surrounding columns are ignored.
+          </p>
+          <textarea id="pasteBox" rows="5" spellcheck="false"
+            placeholder="Buffalo Bills 5-2&#10;Miami Dolphins 2-5&#10;New England Patriots  4  3  0  .571"></textarea>
+          <div class="btnrow">
+            <button class="btn" id="btnPaste" type="button">Read standings</button>
+          </div>
+        </details>
 
         <div class="panel-head panel-head-sub"><h3 class="panel-title sm">Draft data</h3></div>
         <div class="btnrow">

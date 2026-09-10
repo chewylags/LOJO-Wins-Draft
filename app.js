@@ -639,13 +639,117 @@
     reader.readAsText(file);
   }
 
-  /* ---------------- live records (optional) ------------------------ */
+  /* ---------------- records: paste or fetch ------------------------ */
 
-  // ESPN's public endpoints are not a backend we own — this is a
-  // convenience. If it is unreachable, records stay hand-entered.
+  // Every nickname is unique across the 32 teams, so matching on
+  // nickname / full name is unambiguous. Bare abbreviations are matched
+  // only in uppercase, so prose like "no" or "la" can't trigger them.
+  var NAME_PATTERNS = (function () {
+    var ci = [], cs = [], map = {};
+    TEAMS.forEach(function (t) {
+      [t.name, t.short].forEach(function (k) { map[k.toLowerCase()] = t.abbr; ci.push(k); });
+      map[t.abbr] = t.abbr; cs.push(t.abbr);
+    });
+    function esc(x) { return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+    function build(list, flags) {
+      var alts = list.slice().sort(function (a, b) { return b.length - a.length; }).map(esc);
+      return new RegExp('(?:^|[^A-Za-z])(' + alts.join('|') + ')(?![A-Za-z])', flags);
+    }
+    return { ci: build(ci, 'gi'), cs: build(cs, 'g'), map: map };
+  })();
+
+  // Locate every team mentioned in a blob of text, in order of appearance.
+  function findTeamMentions(text) {
+    var hits = [], m;
+    [NAME_PATTERNS.ci, NAME_PATTERNS.cs].forEach(function (re) {
+      re.lastIndex = 0;
+      while ((m = re.exec(text)) !== null) {
+        var key = re === NAME_PATTERNS.ci ? m[1].toLowerCase() : m[1];
+        var abbr = NAME_PATTERNS.map[key];
+        if (abbr) hits.push({ abbr: abbr, at: m.index + m[0].length - m[1].length, len: m[1].length });
+        if (m.index === re.lastIndex) re.lastIndex++;
+      }
+    });
+    hits.sort(function (a, b) { return a.at - b.at; });
+    // Drop a short match swallowed by a longer one ("Bills" inside "Buffalo Bills").
+    return hits.filter(function (h, i) {
+      var prev = hits[i - 1];
+      return !(prev && h.at < prev.at + prev.len);
+    });
+  }
+
+  // Pull W-L(-T) out of the text that follows a team name. A record may be
+  // written "5-2" or spread across columns (W L T PCT ...). Whichever form
+  // appears FIRST wins: an ESPN row leads with its W/L columns and only
+  // later carries home/away splits like "3-1", which must never be mistaken
+  // for the overall record.
+  function readRecord(segment) {
+    var dash = /(?:^|[^\d.-])(\d{1,2})-(\d{1,2})(?:-(\d{1,2}))?(?![\d.-])/.exec(segment);
+    var dashAt = dash ? dash.index : Infinity;
+
+    var intRe = /(?:^|[^\w.-])(\d{1,2})(?![\w.-])/g, ints = [], m;
+    while ((m = intRe.exec(segment)) !== null) {
+      ints.push({ v: +m[1], at: m.index });
+      if (m.index === intRe.lastIndex) intRe.lastIndex++;
+    }
+    var intAt = ints.length >= 2 ? ints[0].at : Infinity;
+
+    if (dashAt === Infinity && intAt === Infinity) return null;
+    if (dashAt <= intAt) return { w: +dash[1], l: +dash[2], t: +(dash[3] || 0) };
+    return { w: ints[0].v, l: ints[1].v, t: ints.length > 2 ? ints[2].v : 0 };
+  }
+
+  function parseStandings(text) {
+    var hits = findTeamMentions(text), found = {}, i;
+    for (i = 0; i < hits.length; i++) {
+      var from = hits[i].at + hits[i].len;
+      var to = i + 1 < hits.length ? hits[i + 1].at : text.length;
+      var rec = readRecord(text.slice(from, to));
+      if (!rec) continue;
+      if (rec.w + rec.l + rec.t > GAMES_IN_SEASON) continue;
+      found[hits[i].abbr] = rec;
+    }
+    return found;
+  }
+
+  // Write parsed records into state. Returns counts for the status line.
+  function applyRecords(found) {
+    var changed = 0, zero = 0;
+    Object.keys(found).forEach(function (abbr) {
+      var r = found[abbr];
+      if (r.w + r.l + r.t === 0) { zero++; delete state.records[abbr]; return; }
+      state.records[abbr] = r;
+      changed++;
+    });
+    if (changed || zero) { save(); renderAll(); }
+    return { changed: changed, zero: zero, total: Object.keys(found).length };
+  }
+
+  function note(cls, msg) {
+    var n = $('#syncNote');
+    n.className = 'syncnote' + (cls ? ' ' + cls : '');
+    n.textContent = msg;
+  }
+
+  function importPasted() {
+    var text = $('#pasteBox').value;
+    if (!text.trim()) { note('bad', 'Paste a standings table into the box first.'); return; }
+    var found = parseStandings(text);
+    if (!Object.keys(found).length) {
+      note('bad', 'No teams recognised in that text. Include team names and their W-L.');
+      return;
+    }
+    var res = applyRecords(found);
+    note('ok', 'Read ' + res.total + ' teams — ' + res.changed + ' with a record'
+      + (res.zero ? ', ' + res.zero + ' still 0-0' : '') + '.');
+  }
+
+  /* ---- optional: pull records straight from ESPN ------------------- */
+
   var ESPN_URLS = [
-    'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams',
     'https://site.api.espn.com/apis/site/v2/sports/football/nfl/standings',
+    'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams',
+    'https://cdn.espn.com/core/nfl/standings?xhr=1',
   ];
 
   // Walk arbitrary JSON for {abbreviation, ...record summary "W-L" or "W-L-T"}.
@@ -680,38 +784,38 @@
   }
 
   function syncRecords() {
-    var note = $('#syncNote'), btn = $('#btnSync');
-    note.className = 'syncnote';
-    note.textContent = 'Contacting ESPN…';
+    var btn = $('#btnSync');
+    note('', 'Contacting ESPN…');
     btn.disabled = true;
 
-    var attempt = 0;
+    var blocked = false, attempt = 0;
     function next() {
-      if (attempt >= ESPN_URLS.length) return Promise.reject(new Error('no source'));
-      var url = ESPN_URLS[attempt++];
-      return fetch(url, { cache: 'no-store' })
-        .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
+      if (attempt >= ESPN_URLS.length) return Promise.reject(new Error(blocked ? 'blocked' : 'empty'));
+      return fetch(ESPN_URLS[attempt++], { cache: 'no-store' })
+        .then(function (res) { if (!res.ok) throw new Error('http ' + res.status); return res.json(); })
         .then(function (json) {
           var found = harvestRecords(json, {}, new WeakSet());
           if (!Object.keys(found).length) throw new Error('empty');
           return found;
         })
-        .catch(next);
+        .catch(function (err) {
+          // A CORS rejection or an offline browser surfaces as a TypeError.
+          if (err && err.name === 'TypeError') blocked = true;
+          return next();
+        });
     }
 
     next().then(function (found) {
-      var n = 0;
-      Object.keys(found).forEach(function (abbr) {
-        var r = found[abbr];
-        if (r.w + r.l + r.t === 0) { delete state.records[abbr]; return; }
-        state.records[abbr] = r; n++;
-      });
-      save(); renderAll();
-      note.className = 'syncnote ok';
-      note.textContent = 'Updated ' + n + ' team records · ' + new Date().toLocaleString();
-    }).catch(function () {
-      note.className = 'syncnote bad';
-      note.textContent = 'Could not reach ESPN. Enter records by hand on the Rosters tab.';
+      var res = applyRecords(found);
+      if (!res.changed) {
+        note('', 'ESPN has all ' + res.total + ' teams at 0-0 — the season has not kicked off yet.');
+      } else {
+        note('ok', 'Updated ' + res.changed + ' records · ' + new Date().toLocaleTimeString());
+      }
+    }).catch(function (err) {
+      note('bad', err && err.message === 'blocked'
+        ? 'Your browser blocked the request to ESPN. Use Paste standings below.'
+        : 'ESPN returned nothing usable. Use Paste standings below.');
     }).then(function () { btn.disabled = false; });
   }
 
@@ -768,6 +872,7 @@
     });
 
     $('#btnSync').addEventListener('click', syncRecords);
+    $('#btnPaste').addEventListener('click', importPasted);
     $('#btnClearRecords').addEventListener('click', function () {
       if (!confirm('Clear every team record?')) return;
       state.records = {}; save(); renderAll(); toast('Records cleared');

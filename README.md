@@ -15,10 +15,14 @@ way. Each side ends up with six teams.
 off the board so nobody's Rams fandom tips the scales. It's a toggle on the Setup tab if you
 ever want them back in.
 
-**Records** can be typed in by hand on the Rosters tab, or you can hit *Sync live records* to
-try pulling them from ESPN's public scoreboard. Each team shows how far ahead of or behind
-its line it's running: a team on a 10.5 line sitting at 6-2 is `+0.6`, because eight games in
-it "should" have about 5.4 wins.
+**Records** can be filled in three ways: typed by hand on the Rosters tab, pasted in as a
+standings table, or pulled live from ESPN. Pasting is the reliable one — copy the standings
+off ESPN, NFL.com or anywhere else, drop the text into the box under Setup → Records, and
+team names and their W-L are picked out of it automatically; surrounding columns (PCT, home
+and away splits, points for/against) are ignored.
+
+Each team then shows how far ahead of or behind its line it's running: a team on a 10.5 line
+sitting at 6-2 reads `+0.6`, because eight games in it "should" have about 5.4 wins.
 
 ## Sharing it without a server
 
