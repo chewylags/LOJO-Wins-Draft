@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0d14">
+<title>LOJO Wins Draft</title>
+<meta name="description" content="Josh vs Logan — the annual NFL season win-total draft.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏈</text></svg>">
+</head>
+<body>
+
+<div class="bg-glow" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">LOJO</span>
+      <span class="brand-rest">WINS DRAFT</span>
+      <span class="brand-year" id="brandYear">2026</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" id="btnShare" type="button" title="Copy a link that contains the whole draft">
+        <span class="ico">🔗</span><span class="lbl">Share</span>
+      </button>
+      <button class="btn btn-ghost" id="btnUndo" type="button" title="Undo the last pick">
+        <span class="ico">↩︎</span><span class="lbl">Undo</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ON THE CLOCK ---------------------------------------------------- -->
+<section class="clockstrip" id="clockstrip">
+  <div class="wrap">
+    <div class="clock-card" id="clockCard">
+      <div class="clock-left">
+        <div class="clock-kicker" id="clockKicker">On the clock</div>
+        <div class="clock-name" id="clockName">Josh</div>
+      </div>
+      <div class="clock-right">
+        <div class="pickno"><span id="pickNum">1</span><span class="pickno-of">/<span id="pickTotal">12</span></span></div>
+        <div class="pickno-lbl">pick</div>
+      </div>
+    </div>
+    <div class="orderstrip" id="orderStrip" role="list" aria-label="Draft order"></div>
+  </div>
+</section>
+
+<!-- SCOREBOARD ------------------------------------------------------ -->
+<section class="wrap">
+  <div class="scoreboard" id="scoreboard"></div>
+</section>
+
+<!-- TABS (mobile) --------------------------------------------------- -->
+<nav class="wrap tabs" id="tabs" role="tablist" aria-label="Sections">
+  <button class="tab is-active" data-tab="board" role="tab" aria-selected="true">Board</button>
+  <button class="tab" data-tab="rosters" role="tab" aria-selected="false">Rosters</button>
+  <button class="tab" data-tab="setup" role="tab" aria-selected="false">Setup</button>
+</nav>
+
+<main class="wrap layout">
+
+  <!-- BOARD --------------------------------------------------------- -->
+  <section class="pane is-active" data-pane="board" aria-label="Draft board">
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Draft Board</h2>
+        <div class="panel-sub" id="boardCount">32 teams</div>
+      </div>
+
+      <div class="boardtools">
+        <div class="searchwrap">
+          <span class="searchico" aria-hidden="true">⌕</span>
+          <input id="search" type="search" placeholder="Search teams…" autocomplete="off" aria-label="Search teams">
+        </div>
+        <div class="chips" id="filterChips" role="group" aria-label="Filter board">
+          <button class="chip is-active" data-filter="all" type="button">All</button>
+          <button class="chip" data-filter="available" type="button">Available</button>
+          <button class="chip" data-filter="drafted" type="button">Drafted</button>
+        </div>
+      </div>
+
+      <ol class="board" id="board"></ol>
+      <p class="board-empty" id="boardEmpty" hidden>No teams match that filter.</p>
+    </div>
+  </section>
+
+  <!-- ROSTERS + SETUP ----------------------------------------------- -->
+  <div class="rightcol">
+    <section class="pane" data-pane="rosters" aria-label="Rosters">
+      <div id="rosters"></div>
+    </section>
+
+    <section class="pane" data-pane="setup" aria-label="Setup">
+      <div class="panel">
+        <div class="panel-head"><h2 class="panel-title">Setup</h2></div>
+
+        <div class="field-row">
+          <label class="field">
+            <span class="field-lbl">Player 1</span>
+            <input id="p0name" type="text" maxlength="14" autocomplete="off">
+          </label>
+          <label class="field">
+            <span class="field-lbl">Player 2</span>
+            <input id="p1name" type="text" maxlength="14" autocomplete="off">
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label class="field">
+            <span class="field-lbl">Season</span>
+            <input id="seasonInput" type="text" maxlength="9" autocomplete="off">
+          </label>
+          <label class="field">
+            <span class="field-lbl">Teams each</span>
+            <input id="sizeInput" type="number" min="1" max="14" step="1">
+          </label>
+        </div>
+
+        <div class="field">
+          <span class="field-lbl">First pick</span>
+          <div class="segmented" id="firstPick" role="group" aria-label="Who picks first">
+            <button type="button" data-first="0"></button>
+            <button type="button" data-first="1"></button>
+            <button type="button" class="seg-flip" id="btnFlip" title="Coin flip">🪙 Flip</button>
+          </div>
+          <p class="hint">Pick 1 goes to the first picker, then the other player takes picks 2 <em>and</em> 3, then it alternates.</p>
+        </div>
+
+        <label class="toggle" for="nfcwToggle">
+          <input type="checkbox" id="nfcwToggle">
+          <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+          <span class="toggle-text">
+            <strong>Lock out the NFC West</strong>
+            <span class="hint">Rams, Seahawks, 49ers and Cardinals can't be drafted. (No Rams-fan bias.)</span>
+          </span>
+        </label>
+
+        <label class="toggle" for="linesToggle">
+          <input type="checkbox" id="linesToggle">
+          <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+          <span class="toggle-text">
+            <strong>Edit win totals</strong>
+            <span class="hint">Turns every line on the board into an input so you can paste in this year's numbers.</span>
+          </span>
+        </label>
+
+        <div class="panel-head panel-head-sub"><h3 class="panel-title sm">Records</h3></div>
+        <p class="hint">Enter each team's record by hand on the Rosters tab, or try pulling live records from ESPN's public scoreboard.</p>
+        <div class="btnrow">
+          <button class="btn" id="btnSync" type="button">⟳ Sync live records</button>
+          <button class="btn btn-ghost" id="btnClearRecords" type="button">Clear records</button>
+        </div>
+        <p class="syncnote" id="syncNote" role="status" aria-live="polite"></p>
+
+        <div class="panel-head panel-head-sub"><h3 class="panel-title sm">Draft data</h3></div>
+        <div class="btnrow">
+          <button class="btn" id="btnShare2" type="button">🔗 Copy share link</button>
+          <button class="btn btn-ghost" id="btnExport" type="button">↓ Export file</button>
+          <button class="btn btn-ghost" id="btnImport" type="button">↑ Import file</button>
+          <input type="file" id="fileInput" accept="application/json,.json" hidden>
+        </div>
+        <div class="btnrow">
+          <button class="btn btn-danger" id="btnResetPicks" type="button">Clear picks</button>
+          <button class="btn btn-danger" id="btnResetAll" type="button">Reset everything</button>
+        </div>
+        <p class="hint">
+          Everything lives in this browser and in the share link — there's no server.
+          Send the link to your co-manager and they'll open the exact same board.
+        </p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="wrap foot">
+  <span>LOJO Wins Draft</span>
+  <span class="dot">•</span>
+  <span>no server, no database — the draft rides in the URL</span>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="teams.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
