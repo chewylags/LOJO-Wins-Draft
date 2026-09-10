@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a0d14">
+<!-- Launch fullscreen from the Home Screen. status-bar-style "black" keeps
+     the bar opaque so content is laid out below it, not underneath. -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="LOJO">
 <title>LOJO Wins Draft</title>
 <meta name="description" content="Josh vs Logan — the annual NFL season win-total draft.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,6 +21,8 @@
 <body>
 
 <div class="bg-glow" aria-hidden="true"></div>
+
+<div class="pull" id="pull" aria-hidden="true"><span class="pull-ring"></span></div>
 
 <header class="topbar">
   <div class="wrap topbar-inner">

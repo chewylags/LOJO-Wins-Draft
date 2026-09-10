@@ -53,6 +53,37 @@ body{
 button{ font:inherit; color:inherit; }
 input{ font:inherit; }
 
+/* ---------- pull to refresh -------------------------------------- */
+/* Standalone from the Home Screen has no browser chrome, so this is the
+   only reload affordance there. */
+.pull{
+  /* below the sticky header (z-index 40) so it emerges from behind it */
+  position:fixed; z-index:30;
+  top:env(safe-area-inset-top,0px); left:50%;
+  margin-left:-19px; margin-top:-48px;
+  width:38px; height:38px; border-radius:50%;
+  display:grid; place-items:center;
+  background:var(--panel-2); border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  opacity:0; pointer-events:none;
+}
+.pull.is-snapping{ transition:transform .26s cubic-bezier(.2,.8,.3,1), opacity .26s ease; }
+.pull-ring{
+  width:18px; height:18px; border-radius:50%;
+  border:2px solid var(--line);
+  border-top-color:var(--ink-3);
+}
+.pull.is-ready .pull-ring{ border-top-color:var(--p0); }
+.pull.is-busy{ opacity:1 !important; }
+.pull.is-busy .pull-ring{
+  border-top-color:var(--p0);
+  animation:pull-spin .7s linear infinite;
+}
+@keyframes pull-spin{ to{ transform:rotate(360deg) } }
+
+/* keep iOS rubber-banding from fighting the gesture */
+html,body{ overscroll-behavior-y:contain; }
+
 /* ---------- top bar ---------------------------------------------- */
 .topbar{
   position:sticky; top:0; z-index:40;

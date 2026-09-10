@@ -764,6 +764,83 @@
       + (when && !isNaN(when) ? ' · ' + when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '');
   }
 
+  /* ---------------- pull to refresh -------------------------------- */
+
+  // Added to the Home Screen, this runs with no browser chrome and so no
+  // reload button. A pull from the top refreshes the records instead.
+  var PULL_TRIGGER = 72;   // px of travel needed to arm it
+  var PULL_MAX = 110;
+  var PULL_RESIST = 0.5;   // pull feels weighted rather than 1:1
+
+  function refreshAll() {
+    // Live scores first; the published file is a cheap same-origin
+    // backstop if ESPN doesn't answer.
+    return refreshLive().then(loadPublished);
+  }
+
+  function initPullToRefresh() {
+    var el = $('#pull'), ring = $('.pull-ring', el);
+    var startY = 0, dist = 0, pulling = false, busy = false;
+
+    function atTop() {
+      return (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
+    }
+
+    function draw(d) {
+      dist = d;
+      el.style.transform = 'translateY(' + Math.min(d, PULL_MAX) + 'px)';
+      el.style.opacity = String(Math.min(d / PULL_TRIGGER, 1));
+      ring.style.transform = 'rotate(' + Math.round(d * 3) + 'deg)';
+      el.classList.toggle('is-ready', d >= PULL_TRIGGER);
+    }
+
+    function snapBack() {
+      dist = 0;
+      el.classList.remove('is-ready');
+      el.classList.add('is-snapping');
+      el.style.transform = '';
+      el.style.opacity = '';
+      ring.style.transform = '';
+      setTimeout(function () { el.classList.remove('is-snapping'); }, 280);
+    }
+
+    document.addEventListener('touchstart', function (e) {
+      if (busy || e.touches.length !== 1 || !atTop()) { pulling = false; return; }
+      startY = e.touches[0].clientY;
+      dist = 0;
+      pulling = true;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function (e) {
+      if (!pulling || busy) return;
+      var d = e.touches[0].clientY - startY;
+      if (d <= 0) {                       // swiping up: hand it back to the page
+        if (dist > 0) snapBack();
+        pulling = false;
+        return;
+      }
+      e.preventDefault();                 // suppress the rubber-band while pulling
+      draw(d * PULL_RESIST);
+    }, { passive: false });
+
+    document.addEventListener('touchend', function () {
+      if (!pulling || busy) return;
+      pulling = false;
+      if (dist < PULL_TRIGGER) { snapBack(); return; }
+
+      busy = true;
+      el.classList.add('is-busy');
+      el.classList.remove('is-ready');
+      el.style.transform = 'translateY(' + PULL_TRIGGER + 'px)';
+      ring.style.transform = '';          // hand rotation over to the animation
+      refreshAll().then(function () {
+        busy = false;
+        el.classList.remove('is-busy');
+        snapBack();
+      });
+    }, { passive: true });
+  }
+
   /* ---------------- wiring ---------------------------------------- */
 
   function bind() {
@@ -865,6 +942,7 @@
       state = local;
     }
     bind();
+    initPullToRefresh();
     renderAll();
     syncHash();
     // Published file first as the base — it always describes all 32 teams —

@@ -27,6 +27,10 @@ ever want them back in.
 Whichever is more recent wins, and feeds merge rather than replace — some endpoints only
 describe the teams playing this week, so overwriting wholesale would drop everyone else.
 
+On a phone, **pull down from the top** to refresh — the same gesture as anywhere else.
+That matters if you add the site to your Home Screen: it launches without browser chrome,
+so the pull is the only reload affordance there.
+
 Records can also be typed by hand on the Rosters tab. Anything typed overrides the feed for
 that team until *Clear manual entries*.
 
