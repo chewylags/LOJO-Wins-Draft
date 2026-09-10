@@ -19,6 +19,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 const ASSETS = [
   ['href', 'styles.css'],
   ['src', 'teams.js'],
+  ['src', 'history.js'],
   ['src', 'records-parse.js'],
   ['src', 'app.js'],
 ];

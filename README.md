@@ -111,6 +111,15 @@ on load and on every pull-to-refresh; if it names a newer build, the app reloads
 cannot guarantee. The draft lives in the URL hash, so it survives the trip, and the app
 refuses to redirect twice for the same build so a stale cache can't cause a reload loop.
 
+## History
+
+The 🏆 button in the header opens past seasons: each year's rosters, the preseason line and
+final record for every team, the points each was worth, and the trophy.
+
+Past seasons live in `history.js` and are scored with the same rules as the live one, so
+adding a year means adding only its picks — points, totals and the winner are all derived.
+A season needs, per team: who drafted it, its preseason win total, and its final record.
+
 ## One host, not two
 
 The site is static, so it will run anywhere — but **pick one URL and stick to it**. Browsers

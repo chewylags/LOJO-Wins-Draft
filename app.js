@@ -800,6 +800,164 @@
       + (when && !isNaN(when) ? ' · ' + when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '');
   }
 
+  /* ---------------- history ---------------------------------------- */
+
+  // Past seasons are scored with exactly the same rules as the live one,
+  // so nothing has to be recorded twice: history.js holds the picks, the
+  // lines and the final records, and everything else is derived.
+  var historyYear = null;
+
+  function seasonTotals(season, idx) {
+    var picks = season.picks.filter(function (p) { return p.by === idx; });
+    var lines = 0, w = 0, l = 0, t = 0, pts = 0;
+    picks.forEach(function (p) {
+      var wins = (p.w | 0) + ((p.t | 0) * 0.5);
+      lines += p.line;
+      w += p.w | 0; l += p.l | 0; t += p.t | 0;
+      pts += pointsFrom(wins, p.line);
+    });
+    return { picks: picks, lines: lines, w: w, l: l, t: t, pts: pts };
+  }
+
+  // Points decide it; total wins break a tie.
+  function seasonWinner(season) {
+    var a = seasonTotals(season, 0), b = seasonTotals(season, 1);
+    if (a.pts !== b.pts) return a.pts > b.pts ? 0 : 1;
+    if (a.w !== b.w) return a.w > b.w ? 0 : 1;
+    return -1;
+  }
+
+  function renderHistoryYears() {
+    var host = $('#historyYears');
+    host.textContent = '';
+    HISTORY.forEach(function (season) {
+      var b = el('button', 'yearchip' + (season.season === historyYear ? ' is-active' : ''), season.season);
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(season.season === historyYear));
+      b.addEventListener('click', function () {
+        historyYear = season.season;
+        renderHistoryYears();
+        renderHistoryBody();
+      });
+      host.appendChild(b);
+    });
+  }
+
+  function renderAllTime() {
+    var line = $('#historyAllTime');
+    if (!HISTORY.length) { line.textContent = ''; return; }
+    var tally = [0, 0], drawn = 0;
+    HISTORY.forEach(function (season) {
+      var win = seasonWinner(season);
+      if (win === -1) drawn++; else tally[win]++;
+    });
+    var names = HISTORY[0].players;
+    line.textContent = names[0] + ' ' + tally[0] + ' — ' + tally[1] + ' ' + names[1]
+      + (drawn ? ' · ' + drawn + ' drawn' : '')
+      + ' · ' + HISTORY.length + (HISTORY.length === 1 ? ' season' : ' seasons');
+  }
+
+  function renderHistoryBody() {
+    var host = $('#historyBody');
+    host.textContent = '';
+
+    if (!HISTORY.length) {
+      host.appendChild(el('p', 'rempty', 'No past seasons recorded yet.'));
+      return;
+    }
+
+    var season = HISTORY.filter(function (s) { return s.season === historyYear; })[0] || HISTORY[0];
+    var winner = seasonWinner(season);
+
+    var banner = el('div', 'hbanner');
+    banner.appendChild(el('span', 'hbanner-year', season.season));
+    if (winner === -1) {
+      banner.appendChild(el('span', 'hbanner-win', 'Dead heat'));
+    } else {
+      var a = seasonTotals(season, 0), b = seasonTotals(season, 1);
+      var margin = Math.abs(a.pts - b.pts);
+      var wrap = el('span', 'hbanner-win is-p' + winner);
+      wrap.appendChild(el('span', 'trophy', '🏆'));
+      wrap.appendChild(el('span', null, season.players[winner]
+        + (margin ? ' by ' + fmt(margin) : ' on wins')));
+      banner.appendChild(wrap);
+    }
+    host.appendChild(banner);
+
+    [0, 1].forEach(function (idx) {
+      host.appendChild(historyPanel(season, idx, winner === idx));
+    });
+  }
+
+  function historyPanel(season, idx, won) {
+    var d = seasonTotals(season, idx);
+    var panel = el('section', 'panel roster' + (won ? ' is-winner' : ''));
+    panel.style.setProperty('--acc', accentVar(idx));
+
+    var head = el('div', 'panel-head');
+    var title = el('h3', 'panel-title', season.players[idx]);
+    if (won) title.appendChild(el('span', 'title-trophy', ' 🏆'));
+    head.appendChild(title);
+
+    var totals = el('div', 'rt-totals');
+    totals.appendChild(numBlock(String(d.w), 'wins'));
+    totals.appendChild(numBlock(signed(d.pts), 'points'));
+    head.appendChild(totals);
+    panel.appendChild(head);
+
+    var list = el('ul', 'rlist');
+    d.picks.slice().sort(function (x, y) { return y.line - x.line; }).forEach(function (p) {
+      list.appendChild(historyRow(p));
+    });
+    panel.appendChild(list);
+
+    var foot = el('div', 'rfoot');
+    foot.appendChild(el('span', null, d.picks.length + ' teams'));
+    foot.appendChild(el('span', null,
+      d.w + '-' + d.l + (d.t ? '-' + d.t : '') + '  ·  ' + fmt(d.lines) + ' win lines'));
+    panel.appendChild(foot);
+    return panel;
+  }
+
+  function historyRow(p) {
+    var team = TEAM_BY_ABBR[p.abbr];
+    var li = el('li', 'rrow');
+    if (team) {
+      li.style.setProperty('--tc', team.color);
+      li.appendChild(logoNode(team, 'sm'));
+    } else {
+      li.appendChild(el('span', 'rrow-logo'));
+    }
+
+    var main = el('div', null);
+    main.appendChild(el('div', 'rrow-name', team ? team.short : p.abbr));
+    main.appendChild(el('div', 'rrow-line', 'line ' + fmt(p.line)));
+    li.appendChild(main);
+
+    li.appendChild(el('span', 'hrec', (p.w | 0) + '-' + (p.l | 0) + (p.t ? '-' + p.t : '')));
+
+    var pts = pointsFrom((p.w | 0) + ((p.t | 0) * 0.5), p.line);
+    var cls = pts > 0 ? 'up' : pts < 0 ? 'down' : 'even';
+    li.appendChild(el('span', 'pts ' + cls, signed(pts)));
+    return li;
+  }
+
+  function openHistory() {
+    if (!historyYear && HISTORY.length) historyYear = HISTORY[0].season;
+    renderAllTime();
+    renderHistoryYears();
+    renderHistoryBody();
+    $('#historySheet').hidden = false;
+    document.body.classList.add('sheet-open');
+    $('#historyClose').focus();
+  }
+
+  function closeHistory() {
+    $('#historySheet').hidden = true;
+    document.body.classList.remove('sheet-open');
+  }
+
   /* ---------------- the published draft ---------------------------- */
 
   // Browsers don't share localStorage — and on iOS a Home Screen app has
@@ -957,6 +1115,15 @@
 
   function bind() {
     $('#btnUndo').addEventListener('click', undo);
+
+    $('#btnHistory').addEventListener('click', openHistory);
+    $('#historyClose').addEventListener('click', closeHistory);
+    $('#historySheet').addEventListener('click', function (e) {
+      if (e.target.hasAttribute('data-close')) closeHistory();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !$('#historySheet').hidden) closeHistory();
+    });
     $('#btnShare').addEventListener('click', function () { copy(shareURL(), 'Share link copied'); });
     $('#btnShare2').addEventListener('click', function () { copy(shareURL(), 'Share link copied'); });
 
