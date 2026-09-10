@@ -3,6 +3,12 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  # A push made with GITHUB_TOKEN (the records job committing records.json)
+  # deliberately does not trigger workflows, so deploy off that run finishing
+  # instead — otherwise fresh records land in the repo but never on the site.
+  workflow_run:
+    workflows: ["Update NFL records"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:

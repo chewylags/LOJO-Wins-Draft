@@ -31,6 +31,10 @@ That leaves two manual paths, both under Setup → Records:
 Each team then shows how far ahead of or behind its line it's running: a team on a 10.5 line
 sitting at 6-2 reads `+0.6`, because eight games in it "should" have about 5.4 wins.
 
+The records job commits with `GITHUB_TOKEN`, and GitHub deliberately does not let such a
+push trigger other workflows, so the Pages deploy is chained to that job finishing via a
+`workflow_run` trigger rather than to its commit.
+
 > GitHub disables scheduled workflows in a repository with no pushes for 60 days. If records
 > ever stop refreshing in the offseason, re-enable the workflow from the Actions tab.
 
