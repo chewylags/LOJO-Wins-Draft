@@ -208,6 +208,27 @@
   </div>
 </div>
 
+<div class="sheet" id="swapSheet" hidden>
+  <div class="sheet-scrim" data-close></div>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="swapTitle">
+    <header class="sheet-head">
+      <div>
+        <h2 class="sheet-title" id="swapTitle">Replace team</h2>
+        <p class="sheet-sub" id="swapSub"></p>
+      </div>
+      <button class="sheet-x" id="swapClose" type="button" aria-label="Close">✕</button>
+    </header>
+    <div class="sheet-tools">
+      <div class="searchwrap">
+        <span class="searchico" aria-hidden="true">⌕</span>
+        <input id="swapSearch" type="search" placeholder="Search teams…" autocomplete="off" aria-label="Search replacement teams">
+      </div>
+      <button class="btn btn-ghost" id="swapUndo" type="button" hidden>Undo swap</button>
+    </div>
+    <div class="sheet-body"><ol class="board" id="swapList"></ol></div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="teams.js"></script>

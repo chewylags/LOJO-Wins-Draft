@@ -24,6 +24,9 @@
       lines: {},         // abbr -> overridden win total
       records: {},       // abbr -> { w, l, t }
       editLines: false,
+      // Original pick -> replacement, under the QB rule: a season-ending
+      // injury to a quarterback before week 6 lets you trade that team.
+      swaps: {},
       updatedAt: 0,      // last local change, for comparing against a publish
     };
   }
@@ -56,15 +59,48 @@
   }
   function isComplete() { return state.picks.length >= totalPicks(); }
 
-  function ownerOf(abbr) {
-    var i = state.picks.indexOf(abbr);
-    return i === -1 ? -1 : order()[i];
+  // What a roster slot actually holds now: the team drafted, or whoever
+  // replaced them under the QB rule.
+  function effectiveTeam(pickAbbr) {
+    var to = state.swaps[pickAbbr];
+    return to && TEAM_BY_ABBR[to] ? to : pickAbbr;
   }
+
+  function ownerOf(abbr) {
+    var o = order(), i;
+    for (i = 0; i < state.picks.length; i++) {
+      if (effectiveTeam(state.picks[i]) === abbr) return o[i];
+    }
+    return -1;
+  }
+
+  // Drafted, then given up under the QB rule: off the board, owned by
+  // nobody, and not available to the other manager either.
+  function isSwappedOut(abbr) {
+    return state.picks.indexOf(abbr) !== -1 && effectiveTeam(abbr) !== abbr;
+  }
+
+  // One entry per roster slot, carrying the team it started as.
+  function rosterEntries(playerIdx) {
+    var o = order(), out = [];
+    state.picks.forEach(function (pick, i) {
+      if (o[i] !== playerIdx) return;
+      var abbr = effectiveTeam(pick);
+      var team = TEAM_BY_ABBR[abbr];
+      if (team) out.push({ team: team, pick: pick, from: abbr === pick ? null : TEAM_BY_ABBR[pick] });
+    });
+    return out;
+  }
+
   function teamsOf(playerIdx) {
-    var o = order();
-    return state.picks.filter(function (a, i) { return o[i] === playerIdx; })
-      .map(function (a) { return TEAM_BY_ABBR[a]; })
-      .filter(Boolean);
+    return rosterEntries(playerIdx).map(function (e) { return e.team; });
+  }
+
+  // A swap is meaningless once its slot is gone.
+  function pruneSwaps() {
+    Object.keys(state.swaps).forEach(function (k) {
+      if (state.picks.indexOf(k) === -1) delete state.swaps[k];
+    });
   }
 
   function lineOf(team) {
@@ -161,6 +197,17 @@
         })
         .slice(0, s.size * 2);
     }
+    if (o.swaps && typeof o.swaps === 'object') {
+      Object.keys(o.swaps).forEach(function (k) {
+        var to = String(o.swaps[k] || '').toUpperCase();
+        // Only a real team, only off a slot that exists, never onto itself
+        // or onto a team already held.
+        if (TEAM_BY_ABBR[k] && TEAM_BY_ABBR[to] && to !== k && s.picks.indexOf(k) !== -1
+            && s.picks.indexOf(to) === -1) {
+          s.swaps[k] = to;
+        }
+      });
+    }
     if (o.lines && typeof o.lines === 'object') {
       Object.keys(o.lines).forEach(function (k) {
         var n = parseFloat(o.lines[k]);
@@ -194,6 +241,7 @@
       z: state.size,
       w: state.lockNFCW ? 1 : 0,
       p: state.picks,
+      x: state.swaps,
       l: state.lines,
       r: {},
     };
@@ -215,7 +263,7 @@
     }
     return sanitize({
       season: p.s, names: p.n, first: p.f, size: p.z,
-      lockNFCW: p.w !== 0, picks: p.p, lines: p.l, records: records,
+      lockNFCW: p.w !== 0, picks: p.p, swaps: p.x, lines: p.l, records: records,
     });
   }
 
@@ -324,7 +372,8 @@
   /* ---------------- render: scoreboard ---------------------------- */
 
   function totalsFor(idx) {
-    var teams = teamsOf(idx), proj = 0, w = 0, l = 0, t = 0, pts = 0, done = teams.length > 0;
+    var entries = rosterEntries(idx), teams = entries.map(function (e) { return e.team; });
+    var proj = 0, w = 0, l = 0, t = 0, pts = 0, done = teams.length > 0;
     teams.forEach(function (team) {
       proj += lineOf(team);
       var r = recordOf(team.abbr);
@@ -332,7 +381,8 @@
       pts += pointsFor(team);
       if (!isFinished(team)) done = false;
     });
-    return { teams: teams, proj: proj, w: w, l: l, t: t, gp: w + l + t, pts: pts, done: done };
+    return { teams: teams, entries: entries, proj: proj, w: w, l: l, t: t,
+             gp: w + l + t, pts: pts, done: done };
   }
 
   function renderScoreboard() {
@@ -386,29 +436,29 @@
 
     var shown = 0, available = 0;
     teams.forEach(function (team, rank) {
-      var owner = ownerOf(team.abbr), locked = isLocked(team);
-      if (owner === -1 && !locked) available++;
+      var owner = ownerOf(team.abbr), locked = isLocked(team), gone = isSwappedOut(team.abbr);
+      if (owner === -1 && !locked && !gone) available++;
 
-      if (ui.filter === 'available' && (owner !== -1 || locked)) return;
+      if (ui.filter === 'available' && (owner !== -1 || locked || gone)) return;
       if (ui.filter === 'drafted' && owner === -1) return;
       if (q && (team.name + ' ' + team.abbr + ' ' + team.short + ' ' + team.div).toLowerCase().indexOf(q) === -1) return;
 
       shown++;
-      board.appendChild(boardRow(team, rank, owner, locked));
+      board.appendChild(boardRow(team, rank, owner, locked, gone));
     });
 
     $('#boardEmpty').hidden = shown > 0;
     $('#boardCount').textContent = available + ' available · ' + state.picks.length + '/' + totalPicks() + ' drafted';
   }
 
-  function boardRow(team, rank, owner, locked) {
+  function boardRow(team, rank, owner, locked, gone) {
     var li = el('li', 'row');
     li.style.setProperty('--tc', team.color);
     li.dataset.abbr = team.abbr;
 
-    var open = owner === -1 && !locked && !isComplete() && !state.editLines;
+    var open = owner === -1 && !locked && !gone && !isComplete() && !state.editLines;
     if (owner !== -1) li.classList.add('is-taken');
-    else if (locked) li.classList.add('is-locked');
+    else if (locked || gone) li.classList.add('is-locked');
     if (open) {
       li.classList.add('is-open');
       li.tabIndex = 0;
@@ -447,6 +497,7 @@
     } else {
       right.appendChild(el('span', 'line-pill', fmt(lineOf(team))));
       if (owner !== -1) right.appendChild(el('span', 'tag tag-p' + owner, state.names[owner]));
+      else if (gone) right.appendChild(el('span', 'tag tag-out', 'Dropped'));
       else if (locked) right.appendChild(el('span', 'tag tag-out', 'Locked'));
       else right.appendChild(el('span', 'tag tag-open', 'Open'));
     }
@@ -489,8 +540,8 @@
     }
 
     var list = el('ul', 'rlist');
-    d.teams.slice().sort(function (a, b) { return lineOf(b) - lineOf(a); })
-      .forEach(function (team) { list.appendChild(rosterRow(team)); });
+    d.entries.slice().sort(function (a, b) { return lineOf(b.team) - lineOf(a.team); })
+      .forEach(function (entry) { list.appendChild(rosterRow(entry)); });
     panel.appendChild(list);
 
     var foot = el('div', 'rfoot');
@@ -509,14 +560,29 @@
     return b;
   }
 
-  function rosterRow(team) {
+  function rosterRow(entry) {
+    var team = entry.team;
     var li = el('li', 'rrow');
     li.style.setProperty('--tc', team.color);
     li.appendChild(logoNode(team, 'sm'));
 
     var main = el('div', null);
-    main.appendChild(el('div', 'rrow-name', team.short));
-    main.appendChild(el('div', 'rrow-line', 'line ' + fmt(lineOf(team))));
+    var name = el('div', 'rrow-name', team.short);
+    if (entry.from) name.appendChild(el('span', 'swap-tag', 'SWAP'));
+
+    var swapBtn = el('button', 'swap-btn', '⇄');
+    swapBtn.type = 'button';
+    swapBtn.title = entry.from
+      ? 'Replaced the ' + entry.from.short + ' — change or undo'
+      : 'Replace ' + team.short + ' under the QB rule';
+    swapBtn.setAttribute('aria-label', swapBtn.title);
+    swapBtn.addEventListener('click', function () { openSwap(entry); });
+    name.appendChild(swapBtn);
+    main.appendChild(name);
+
+    var sub = el('div', 'rrow-line', 'line ' + fmt(lineOf(team)));
+    if (entry.from) sub.appendChild(el('span', 'swap-note', ' · in for ' + entry.from.short));
+    main.appendChild(sub);
     li.appendChild(main);
 
     var r = recordOf(team.abbr);
@@ -604,6 +670,7 @@
   function undo() {
     if (!state.picks.length) { toast('Nothing to undo'); return; }
     var abbr = state.picks.pop();
+    pruneSwaps();
     save(); renderAll();
     toast(TEAM_BY_ABBR[abbr].short + ' back on the board');
   }
@@ -639,6 +706,7 @@
       if (drafted.length) {
         var cut = Math.min.apply(null, drafted.map(function (a) { return state.picks.indexOf(a); }));
         state.picks = state.picks.slice(0, cut);
+        pruneSwaps();
       }
     }
     state.lockNFCW = on;
@@ -649,7 +717,7 @@
     n = parseInt(n, 10);
     if (!isFinite(n) || n < 1 || n > 14) { renderSetup(); return; }
     state.size = n;
-    if (state.picks.length > n * 2) state.picks = state.picks.slice(0, n * 2);
+    if (state.picks.length > n * 2) { state.picks = state.picks.slice(0, n * 2); pruneSwaps(); }
     save(); renderAll();
   }
 
@@ -931,8 +999,18 @@
     }
 
     var main = el('div', null);
-    main.appendChild(el('div', 'rrow-name', team ? team.short : p.abbr));
-    main.appendChild(el('div', 'rrow-line', 'line ' + fmt(p.line)));
+    var name = el('div', 'rrow-name', team ? team.short : p.abbr);
+    if (p.replaced) name.appendChild(el('span', 'swap-tag', 'SWAP'));
+    main.appendChild(name);
+
+    var sub = el('div', 'rrow-line', 'line ' + fmt(p.line));
+    if (p.replaced) {
+      var was = TEAM_BY_ABBR[p.replaced.abbr];
+      var note = el('span', 'swap-note', ' · in for ' + (was ? was.short : p.replaced.abbr));
+      if (p.replaced.note) note.title = p.replaced.note;
+      sub.appendChild(note);
+    }
+    main.appendChild(sub);
     li.appendChild(main);
 
     li.appendChild(el('span', 'hrec', (p.w | 0) + '-' + (p.l | 0) + (p.t ? '-' + p.t : '')));
@@ -956,6 +1034,102 @@
   function closeHistory() {
     $('#historySheet').hidden = true;
     document.body.classList.remove('sheet-open');
+  }
+
+  /* ---------------- the QB rule ------------------------------------ */
+
+  // House rule: a season-ending injury to a quarterback before week 6 lets
+  // you trade that team for any team still on the board. The replacement
+  // is scored against its own line and its own full-season record — you
+  // take the new team as it comes, so there is nothing to game.
+  var swapEntry = null;
+
+  function openSwap(entry) {
+    swapEntry = entry;
+    $('#swapSub').textContent = entry.from
+      ? entry.team.short + ', in for the ' + entry.from.short
+      : 'Pick who comes in for the ' + entry.team.short;
+    $('#swapSearch').value = '';
+    $('#swapUndo').hidden = !entry.from;
+    renderSwapList('');
+    $('#swapSheet').hidden = false;
+    document.body.classList.add('sheet-open');
+    $('#swapSearch').focus();
+  }
+
+  function closeSwap() {
+    $('#swapSheet').hidden = true;
+    document.body.classList.remove('sheet-open');
+    swapEntry = null;
+  }
+
+  function renderSwapList(query) {
+    var list = $('#swapList'), q = query.trim().toLowerCase();
+    list.textContent = '';
+
+    var available = TEAMS.map(function (t, i) { return { t: t, i: i }; })
+      .sort(function (x, y) { return lineOf(y.t) - lineOf(x.t) || x.i - y.i; })
+      .map(function (o) { return o.t; })
+      .filter(function (team) {
+        return ownerOf(team.abbr) === -1 && !isLocked(team) && !isSwappedOut(team.abbr);
+      });
+
+    var shown = 0;
+    available.forEach(function (team, rank) {
+      if (q && (team.name + ' ' + team.abbr + ' ' + team.short + ' ' + team.div)
+        .toLowerCase().indexOf(q) === -1) return;
+      shown++;
+      list.appendChild(swapRow(team, rank));
+    });
+    if (!shown) list.appendChild(el('p', 'board-empty', 'No teams match.'));
+  }
+
+  function swapRow(team, rank) {
+    var li = el('li', 'row is-open');
+    li.style.setProperty('--tc', team.color);
+    li.tabIndex = 0;
+    li.setAttribute('role', 'button');
+
+    li.appendChild(el('span', 'row-rank', String(rank + 1)));
+    li.appendChild(logoNode(team));
+
+    var main = el('div', 'row-main');
+    main.appendChild(el('div', 'row-name', team.name));
+    var meta = el('div', 'row-meta');
+    meta.appendChild(el('span', 'row-div', team.div));
+    main.appendChild(meta);
+    li.appendChild(main);
+
+    var right = el('div', 'row-right');
+    right.appendChild(el('span', 'line-pill', fmt(lineOf(team))));
+    li.appendChild(right);
+
+    function choose() { applySwap(swapEntry.pick, team.abbr); }
+    li.addEventListener('click', choose);
+    li.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); }
+    });
+    return li;
+  }
+
+  function applySwap(pickAbbr, toAbbr) {
+    var was = TEAM_BY_ABBR[effectiveTeam(pickAbbr)];
+    if (toAbbr === pickAbbr) delete state.swaps[pickAbbr];
+    else state.swaps[pickAbbr] = toAbbr;
+    save();
+    renderAll();
+    closeSwap();
+    toast(TEAM_BY_ABBR[toAbbr].short + ' in for the ' + was.short);
+  }
+
+  function undoSwap() {
+    if (!swapEntry) return;
+    var back = TEAM_BY_ABBR[swapEntry.pick];
+    delete state.swaps[swapEntry.pick];
+    save();
+    renderAll();
+    closeSwap();
+    toast(back.short + ' back in');
   }
 
   /* ---------------- the published draft ---------------------------- */
@@ -1116,13 +1290,22 @@
   function bind() {
     $('#btnUndo').addEventListener('click', undo);
 
+    $('#swapClose').addEventListener('click', closeSwap);
+    $('#swapUndo').addEventListener('click', undoSwap);
+    $('#swapSearch').addEventListener('input', function (e) { renderSwapList(e.target.value); });
+    $('#swapSheet').addEventListener('click', function (e) {
+      if (e.target.hasAttribute('data-close')) closeSwap();
+    });
+
     $('#btnHistory').addEventListener('click', openHistory);
     $('#historyClose').addEventListener('click', closeHistory);
     $('#historySheet').addEventListener('click', function (e) {
       if (e.target.hasAttribute('data-close')) closeHistory();
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && !$('#historySheet').hidden) closeHistory();
+      if (e.key !== 'Escape') return;
+      if (!$('#swapSheet').hidden) closeSwap();
+      else if (!$('#historySheet').hidden) closeHistory();
     });
     $('#btnShare').addEventListener('click', function () { copy(shareURL(), 'Share link copied'); });
     $('#btnShare2').addEventListener('click', function () { copy(shareURL(), 'Share link copied'); });
@@ -1190,7 +1373,7 @@
 
     $('#btnResetPicks').addEventListener('click', function () {
       if (!confirm('Clear all picks? Names, lines and records stay put.')) return;
-      state.picks = []; save(); renderAll(); toast('Board wiped clean');
+      state.picks = []; state.swaps = {}; save(); renderAll(); toast('Board wiped clean');
     });
     $('#btnResetAll').addEventListener('click', function () {
       if (!confirm('Reset everything back to defaults?')) return;

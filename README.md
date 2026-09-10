@@ -111,6 +111,17 @@ on load and on every pull-to-refresh; if it names a newer build, the app reloads
 cannot guarantee. The draft lives in the URL hash, so it survives the trip, and the app
 refuses to redirect twice for the same build so a stale cache can't cause a reload loop.
 
+## The QB rule
+
+A season-ending injury to a quarterback before week 6 lets you trade that team for any team
+still on the board. In the Rosters tab, the ⇄ beside a team opens a picker of what's
+available; the replacement is scored against **its own** line and **its own** full-season
+record, so there is nothing to game by swapping late. The team given up is dropped from the
+board rather than returned to the pool — neither manager can draft it.
+
+Swapped rosters carry through share links and published drafts, and past seasons show the
+same thing with a SWAP badge and who the team came in for.
+
 ## History
 
 The 🏆 button in the header opens past seasons: each year's rosters, the preseason line and

@@ -10,6 +10,10 @@
      players : [player 0, player 1] — names as they were that year
      picks   : in draft order. `by` is the index into `players`.
                line is the preseason win total; w/l/t is the final record.
+               `replaced` records a team swapped in under the QB rule — a
+               season-ending injury to a quarterback before week 6 lets you
+               trade that team for another. abbr/line describe the team that
+               was given up; everything else describes the replacement.
 
    Example:
      {
@@ -36,10 +40,11 @@ const HISTORY = [
       { abbr: 'BUF', by: 0, line: 10.5, w: 11, l: 6,  t: 0 },
       { abbr: 'DAL', by: 1, line: 9.5,  w: 12, l: 5,  t: 0 },
       { abbr: 'JAX', by: 0, line: 9.5,  w: 9,  l: 8,  t: 0 },
-      // The draft list records this pick as the Jets, but the results
-      // list has the Packers — going with the one that carries a record.
-      // The note gives no line for them; 8.5 was the 2023 market number.
-      { abbr: 'GB',  by: 1, line: 8.5,  w: 9,  l: 8,  t: 0 },
+      // Drafted the Jets; Aaron Rodgers tore his Achilles four snaps into
+      // week 1, so the QB rule applied and the Packers came in. The note
+      // gives no line for the Packers; 8.5 was the 2023 market number.
+      { abbr: 'GB',  by: 1, line: 8.5,  w: 9,  l: 8,  t: 0,
+        replaced: { abbr: 'NYJ', line: 9.5, note: 'Aaron Rodgers, week 1' } },
       { abbr: 'BAL', by: 0, line: 10.5, w: 13, l: 4,  t: 0 },
       { abbr: 'DET', by: 1, line: 9.5,  w: 12, l: 5,  t: 0 },
       { abbr: 'LAC', by: 0, line: 9.5,  w: 5,  l: 12, t: 0 },
