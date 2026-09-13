@@ -1,4 +1,39 @@
 {
-  "publishedAt": null,
-  "note": "No draft published yet. Run the \"Publish draft\" workflow with a Share link from the app."
+  "publishedAt": "2026-09-13T17:12:08.641Z",
+  "season": "2026",
+  "players": [
+    "Josh",
+    "Logan"
+  ],
+  "picks": [
+    "BUF",
+    "BAL",
+    "NE",
+    "CIN",
+    "DET",
+    "DEN",
+    "GB",
+    "HOU",
+    "CHI",
+    "DAL",
+    "JAX",
+    "PHI",
+    "KC",
+    "LAC",
+    "TB",
+    "PIT",
+    "WSH",
+    "CAR",
+    "IND",
+    "NYG",
+    "MIN",
+    "NO",
+    "ATL",
+    "NYJ",
+    "TEN",
+    "LV",
+    "CLE",
+    "MIA"
+  ],
+  "code": "eyJ2IjoxLCJzIjoiMjAyNiIsIm4iOlsiSm9zaCIsIkxvZ2FuIl0sImYiOjEsInoiOjE0LCJ3IjoxLCJwIjpbIkJVRiIsIkJBTCIsIk5FIiwiQ0lOIiwiREVUIiwiREVOIiwiR0IiLCJIT1UiLCJDSEkiLCJEQUwiLCJKQVgiLCJQSEkiLCJLQyIsIkxBQyIsIlRCIiwiUElUIiwiV1NIIiwiQ0FSIiwiSU5EIiwiTllHIiwiTUlOIiwiTk8iLCJBVEwiLCJOWUoiLCJURU4iLCJMViIsIkNMRSIsIk1JQSJdLCJ4Ijp7fSwibCI6e30sInIiOnt9fQ"
 }
