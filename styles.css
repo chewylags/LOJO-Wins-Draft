@@ -592,8 +592,10 @@ body.sheet-open{ overflow:hidden }
 
 @media (max-width:560px){
   .topbar-actions .lbl{ display:none }
-  /* A bare trophy reads as a guess. With undo and redo retired there is
-     room to keep this one word, so the tab says what it opens. */
+  /* A bare icon reads as a guess. With undo and redo retired there is room
+     to keep these two words, so each tab says what it opens. The rule above
+     still covers undo and redo, which stay icon-only if they come back. */
+  #btnShare .lbl,
   #btnHistory .lbl{ display:inline }
   .topbar-actions .btn{ padding:9px 11px }
   .topbar-actions .ico{ font-size:15px }
