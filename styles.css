@@ -418,6 +418,56 @@ html,body{ overscroll-behavior-y:contain; }
 .field input:focus{ outline:none; border-color:#34415c }
 .hint{ font-size:11.5px; color:var(--ink-3); line-height:1.5; margin:7px 0 0 }
 
+/* ---------- the folded, lockable draft setup ------------------------ */
+.setup-fold{
+  margin-top:16px; border:1px solid var(--line);
+  border-radius:var(--radius); background:var(--bg-2);
+}
+.setup-summary{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:13px 14px; cursor:pointer; list-style:none;
+  font-family:var(--disp); font-size:16px; font-weight:700;
+  letter-spacing:.09em; text-transform:uppercase;
+}
+.setup-summary::-webkit-details-marker{ display:none }   /* Safari's triangle */
+/* Title and badge share the first line, the gist drops to its own below,
+   so a narrow phone gets two tidy rows instead of three ragged ones. */
+.setup-summary::after{
+  content:'▾'; order:3; margin-left:auto; font-family:var(--body); font-size:13px;
+  color:var(--ink-3); transition:transform .18s;
+}
+.setup-fold[open] > .setup-summary::after{ transform:rotate(180deg) }
+.setup-summary:focus-visible{ outline:2px solid var(--p1); outline-offset:-2px; border-radius:var(--radius) }
+.setup-summary-title{ flex:0 0 auto; order:1 }
+.setup-summary-at{
+  order:4; flex:1 1 100%; min-width:0; margin-top:-4px;
+  font-family:var(--mono); font-size:11.5px;
+  font-weight:500; letter-spacing:0; text-transform:none; color:var(--ink-3);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.setup-lockbadge{
+  flex:0 0 auto; order:2; font-family:var(--mono); font-size:10.5px; font-weight:600;
+  letter-spacing:.04em; text-transform:none; color:var(--gold);
+  border:1px solid rgba(255,200,87,.34); border-radius:999px; padding:3px 9px;
+}
+.setup-foldbody{ padding:0 14px 15px; }
+.setup-locknote{
+  margin:0 0 4px; font-size:12px; line-height:1.55; color:var(--ink-2);
+  border-left:2px solid rgba(255,200,87,.4); padding-left:10px;
+}
+.linkbtn{
+  border:0; background:none; padding:0; cursor:pointer; font:inherit;
+  color:var(--p1); text-decoration:underline; text-underline-offset:2px;
+}
+.linkbtn:hover{ color:var(--ink) }
+
+/* Locked: readable, clearly not typeable. Pointer events stay on so a tap
+   lands on the panel rather than silently doing nothing. */
+.setup-fold.is-locked .field input,
+.setup-fold.is-locked .segmented button{ opacity:.5; cursor:not-allowed; }
+.setup-fold.is-locked .toggle{ opacity:.55; cursor:not-allowed; }
+.setup-fold.is-locked .toggle-track{ cursor:not-allowed }
+
 .segmented{ display:flex; gap:6px; flex-wrap:wrap }
 .segmented button{
   flex:1 1 90px; border:1px solid var(--line); background:var(--bg-2);

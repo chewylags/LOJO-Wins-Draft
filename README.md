@@ -177,6 +177,12 @@ Flip on **Edit win totals** in Setup and every line on the board becomes an inpu
 the new numbers, and the board re-ranks itself as you go. To change the baseline defaults
 that a fresh browser starts from, edit the `line` values in `teams.js`.
 
+Once every pick is in, the draft's own settings — season, teams each, first pick, the NFC
+West lock, and the line editor — fold away under **Draft Setup** and go read-only, so a
+finished season can't be rewritten by a stray tap. Player names stay editable. Clearing the
+picks unlocks them again, or **edit them anyway** in the panel unlocks without touching the
+board; that unlock lasts for the visit only and is gone on reload.
+
 Undo and redo are hidden once a draft is finished, since there is nothing left to take
 back. To bring them back for the next draft, set `SHOW_UNDO_REDO` to `true` at the top of
 `app.js` — the buttons stay in the page and stay wired the whole time, so that one word is

@@ -139,44 +139,63 @@
           </label>
         </div>
 
-        <div class="field-row">
-          <label class="field">
-            <span class="field-lbl">Season</span>
-            <input id="seasonInput" type="text" maxlength="9" autocomplete="off">
-          </label>
-          <label class="field">
-            <span class="field-lbl">Teams each</span>
-            <input id="sizeInput" type="number" min="1" max="14" step="1">
-          </label>
-        </div>
+        <!-- The rules of the draft itself. Once every pick is in, changing
+             any of these would rewrite a finished season, so they lock and
+             fold away; the summary keeps them readable at a glance. -->
+        <details class="setup-fold" id="setupFold">
+          <summary class="setup-summary">
+            <span class="setup-summary-title">Draft Setup</span>
+            <span class="setup-summary-at" id="setupGist"></span>
+            <span class="setup-lockbadge" id="setupLockBadge" hidden>🔒 Locked</span>
+          </summary>
 
-        <div class="field">
-          <span class="field-lbl">First pick</span>
-          <div class="segmented" id="firstPick" role="group" aria-label="Who picks first">
-            <button type="button" data-first="0"></button>
-            <button type="button" data-first="1"></button>
-            <button type="button" class="seg-flip" id="btnFlip" title="Coin flip">🪙 Flip</button>
+          <div class="setup-foldbody">
+            <p class="setup-locknote" id="setupLockNote" hidden>
+              The 2026 draft is complete, so these are read-only. Clearing the picks
+              unlocks them, or <button type="button" class="linkbtn" id="btnUnlockSetup">edit them anyway</button>
+              if you just need to fix something.
+            </p>
+
+            <div class="field-row">
+              <label class="field">
+                <span class="field-lbl">Season</span>
+                <input id="seasonInput" type="text" maxlength="9" autocomplete="off">
+              </label>
+              <label class="field">
+                <span class="field-lbl">Teams each</span>
+                <input id="sizeInput" type="number" min="1" max="14" step="1">
+              </label>
+            </div>
+
+            <div class="field">
+              <span class="field-lbl">First pick</span>
+              <div class="segmented" id="firstPick" role="group" aria-label="Who picks first">
+                <button type="button" data-first="0"></button>
+                <button type="button" data-first="1"></button>
+                <button type="button" class="seg-flip" id="btnFlip" title="Coin flip">🪙 Flip</button>
+              </div>
+              <p class="hint">Pick 1 goes to the first picker, then the other player takes picks 2 <em>and</em> 3, then it alternates.</p>
+            </div>
+
+            <label class="toggle" for="nfcwToggle">
+              <input type="checkbox" id="nfcwToggle">
+              <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+              <span class="toggle-text">
+                <strong>Lock out the NFC West</strong>
+                <span class="hint">Rams, Seahawks, 49ers and Cardinals can't be drafted. (No Rams-fan bias.)</span>
+              </span>
+            </label>
+
+            <label class="toggle" for="linesToggle">
+              <input type="checkbox" id="linesToggle">
+              <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+              <span class="toggle-text">
+                <strong>Edit win totals</strong>
+                <span class="hint">Turns every line on the board into an input so you can paste in this year's numbers.</span>
+              </span>
+            </label>
           </div>
-          <p class="hint">Pick 1 goes to the first picker, then the other player takes picks 2 <em>and</em> 3, then it alternates.</p>
-        </div>
-
-        <label class="toggle" for="nfcwToggle">
-          <input type="checkbox" id="nfcwToggle">
-          <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
-          <span class="toggle-text">
-            <strong>Lock out the NFC West</strong>
-            <span class="hint">Rams, Seahawks, 49ers and Cardinals can't be drafted. (No Rams-fan bias.)</span>
-          </span>
-        </label>
-
-        <label class="toggle" for="linesToggle">
-          <input type="checkbox" id="linesToggle">
-          <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
-          <span class="toggle-text">
-            <strong>Edit win totals</strong>
-            <span class="hint">Turns every line on the board into an input so you can paste in this year's numbers.</span>
-          </span>
-        </label>
+        </details>
 
         <div class="panel-head panel-head-sub"><h3 class="panel-title sm">Records</h3></div>
         <div class="btnrow">

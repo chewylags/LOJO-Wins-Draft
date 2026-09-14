@@ -707,6 +707,18 @@
 
   /* ---------------- render: setup --------------------------------- */
 
+  // Everything that defines the draft itself, as opposed to what happened
+  // in it. Names are deliberately not here: a nickname is always safe to
+  // change, even years later.
+  var SETUP_FIELDS = ['#seasonInput', '#sizeInput', '#nfcwToggle', '#linesToggle',
+                      '#firstPick [data-first]', '#btnFlip'];
+
+  // Deliberately not saved. An unlock lasts for the visit that asked for
+  // it, so the settings are never left quietly editable for next time.
+  var setupUnlocked = false;
+
+  function setupLocked() { return isComplete() && !setupUnlocked; }
+
   function renderSetup() {
     $('#p0name').value = state.names[0];
     $('#p1name').value = state.names[1];
@@ -719,6 +731,31 @@
       b.textContent = state.names[i];
       b.classList.toggle('is-active', state.first === i);
     });
+    renderSetupLock();
+  }
+
+  function renderSetupLock() {
+    var locked = setupLocked();
+
+    SETUP_FIELDS.forEach(function (sel) {
+      $$(sel).forEach(function (el) { el.disabled = locked; });
+    });
+
+    $('#setupFold').classList.toggle('is-locked', locked);
+    $('#setupLockBadge').hidden = !locked;
+    $('#setupLockNote').hidden = !locked;
+
+    // Closed once it is only for reference; open while there is a draft to
+    // run. Only set when the lock state changes, so a fold the reader opened
+    // themselves is not snapped shut under them on the next render.
+    if (ui.setupWasLocked !== locked) {
+      $('#setupFold').open = !locked;
+      ui.setupWasLocked = locked;
+    }
+
+    $('#setupGist').textContent = state.season + ' · ' + state.size + ' each · '
+      + state.names[state.first] + ' first'
+      + (state.lockNFCW ? ' · no NFC West' : '');
   }
 
   function renderAll() {
@@ -1439,6 +1476,15 @@
     // Kept in the page and wired either way, so turning SHOW_UNDO_REDO back
     // on is the only step: no listener to re-add, nothing left half-bound.
     $('#undoRedo').hidden = !SHOW_UNDO_REDO;
+    // Unlocking without destroying anything: the alternative would be
+    // clearing a finished draft just to correct a typo.
+    $('#btnUnlockSetup').addEventListener('click', function () {
+      setupUnlocked = true;
+      renderSetupLock();
+      $('#seasonInput').focus();
+      toast('Setup unlocked for this visit');
+    });
+
     $('#btnUndo').addEventListener('click', undo);
     $('#btnRedo').addEventListener('click', redo);
 
@@ -1527,7 +1573,8 @@
 
     $('#btnResetPicks').addEventListener('click', function () {
       if (!confirm('Clear all picks? Names, lines and records stay put.')) return;
-      state.picks = []; state.swaps = {}; clearRedo(); save(); renderAll(); toast('Board wiped clean');
+      state.picks = []; state.swaps = {}; clearRedo(); save(); renderAll();
+      toast('Board wiped clean — setup is editable again');
     });
     $('#btnResetAll').addEventListener('click', function () {
       if (!confirm('Reset everything back to defaults?')) return;
