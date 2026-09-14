@@ -1365,6 +1365,11 @@
     var startY = 0, dist = 0, pulling = false, busy = false;
 
     function atTop() {
+      // A sheet (history, swap) covers the page and does its own scrolling,
+      // while the page behind it stays pinned at zero — so the page always
+      // looks "at the top" and every downward swipe inside a sheet armed
+      // the pull, whose preventDefault then ate the sheet's own scroll.
+      if (document.body.classList.contains('sheet-open')) return false;
       return (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
     }
 
