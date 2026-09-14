@@ -6,6 +6,18 @@
 (function () {
   'use strict';
 
+  // Guard on the two buttons that can destroy a finished draft. This is a
+  // public, serverless site, so treat it as a lock on a garden gate: it
+  // stops a stray tap and a casual poke, not somebody determined — the
+  // page's own code is readable by anyone. The plaintext is deliberately
+  // not in the repo; this is its SHA-256. To change the password, hash the
+  // new one and paste the hex here:
+  //   echo -n 'newword' | shasum -a 256
+  // Nothing else needs to change. And the real safety net is elsewhere:
+  // the published draft.json survives any reset, so "Load published draft"
+  // always brings the board back.
+  var PASS_HASH = '8deb5d9d4710a531eea84a0845c7ad8a27d16468db509aaf36644343c26fc458';
+
   // Undo and redo only earn their place in the header while a draft is
   // actually being made. Flip this back to true before next year's draft
   // and both buttons return, fully wired — nothing else to change.
@@ -1207,6 +1219,67 @@
     document.body.classList.remove('sheet-open');
   }
 
+  /* ---------------- the password gate ------------------------------ */
+
+  function sha256hex(text) {
+    // Available on https and on localhost. If it somehow is not, the caller
+    // falls back to a typed confirmation rather than letting the tap through.
+    if (!window.crypto || !crypto.subtle) return Promise.resolve(null);
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+      .then(function (buf) {
+        return Array.prototype.map.call(new Uint8Array(buf), function (b) {
+          return ('0' + b.toString(16)).slice(-2);
+        }).join('');
+      })
+      .catch(function () { return null; });
+  }
+
+  var passPending = null;   // the resolve() of the ask() currently on screen
+
+  // Resolves true only if the right password is typed. Cancelling, closing
+  // or pressing Escape resolves false, so every caller reads the same way.
+  function askPassword(title, sub) {
+    return new Promise(function (resolve) {
+      var noCrypto = !window.crypto || !crypto.subtle;
+      $('#passTitle').textContent = title;
+      $('#passSub').textContent = sub;
+      $('#passLabel').textContent = noCrypto ? 'Type CLEAR to confirm' : 'Password';
+      $('#passInput').type = noCrypto ? 'text' : 'password';
+      $('#passInput').value = '';
+      $('#passError').hidden = true;
+      $('#passSheet').hidden = false;
+      document.body.classList.add('sheet-open');
+      passPending = resolve;
+      setTimeout(function () { $('#passInput').focus(); }, 30);
+    });
+  }
+
+  function closePassword(ok) {
+    $('#passSheet').hidden = true;
+    document.body.classList.remove('sheet-open');
+    $('#passInput').value = '';
+    var done = passPending;
+    passPending = null;
+    if (done) done(ok);
+  }
+
+  function submitPassword() {
+    var typed = $('#passInput').value;
+    if (!window.crypto || !crypto.subtle) {
+      if (typed.trim().toUpperCase() === 'CLEAR') { closePassword(true); return; }
+      $('#passError').hidden = false;
+      return;
+    }
+    sha256hex(typed).then(function (hex) {
+      if (hex && hex === PASS_HASH) { closePassword(true); return; }
+      $('#passError').hidden = false;
+      $('#passInput').select();
+      $('#passSheet').classList.remove('is-wrong');
+      void $('#passSheet').offsetWidth;          // restart the shake
+      $('#passSheet').classList.add('is-wrong');
+    });
+  }
+
   /* ---------------- the QB rule ------------------------------------ */
 
   // House rule: a season-ending injury to a quarterback before week 6 lets
@@ -1495,6 +1568,13 @@
       if (e.target.hasAttribute('data-close')) closeSwap();
     });
 
+    $('#passForm').addEventListener('submit', function (e) { e.preventDefault(); submitPassword(); });
+    $('#passCancel').addEventListener('click', function () { closePassword(false); });
+    $('#passClose').addEventListener('click', function () { closePassword(false); });
+    $('#passSheet').addEventListener('click', function (e) {
+      if (e.target.hasAttribute('data-close')) closePassword(false);
+    });
+
     $('#btnHistory').addEventListener('click', openHistory);
     $('#historyClose').addEventListener('click', closeHistory);
     $('#historySheet').addEventListener('click', function (e) {
@@ -1502,7 +1582,8 @@
     });
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
-      if (!$('#swapSheet').hidden) closeSwap();
+      if (!$('#passSheet').hidden) closePassword(false);
+      else if (!$('#swapSheet').hidden) closeSwap();
       else if (!$('#historySheet').hidden) closeHistory();
     });
     $('#btnShare').addEventListener('click', function () { copy(shareURL(), 'Share link copied'); });
@@ -1571,21 +1652,31 @@
       e.target.value = '';
     });
 
+    // Both of these throw away a finished draft, so they ask for the
+    // password rather than a one-tap confirm that a thumb can hit by
+    // accident. The count is spelled out so it is obvious what is at stake.
     $('#btnResetPicks').addEventListener('click', function () {
-      if (!confirm('Clear all picks? Names, lines and records stay put.')) return;
-      state.picks = []; state.swaps = {}; clearRedo(); save(); renderAll();
-      toast('Board wiped clean — setup is editable again');
+      askPassword('Clear picks', state.picks.length
+        ? 'Wipes all ' + state.picks.length + ' picks. Names, lines and records stay put.'
+        : 'The board is already empty.').then(function (ok) {
+        if (!ok) return;
+        state.picks = []; state.swaps = {}; clearRedo(); save(); renderAll();
+        toast('Board wiped clean — setup is editable again');
+      });
     });
     $('#btnResetAll').addEventListener('click', function () {
-      if (!confirm('Reset everything back to defaults?')) return;
-      state = defaultState();
-      clearRedo();
-      save();
-      renderAll();
-      toast('Fresh start');
-      // Come back to the published draft if there is one, rather than
-      // sitting blank until somebody publishes again.
-      considerPublishedDraft(0);
+      askPassword('Reset everything',
+        'Throws away picks, names, lines and records, back to defaults.').then(function (ok) {
+        if (!ok) return;
+        state = defaultState();
+        clearRedo();
+        save();
+        renderAll();
+        toast('Fresh start');
+        // Come back to the published draft if there is one, rather than
+        // sitting blank until somebody publishes again.
+        considerPublishedDraft(0);
+      });
     });
 
     // Navigating to a different link while the app is open goes through the

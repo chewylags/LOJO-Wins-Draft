@@ -177,6 +177,14 @@ Flip on **Edit win totals** in Setup and every line on the board becomes an inpu
 the new numbers, and the board re-ranks itself as you go. To change the baseline defaults
 that a fresh browser starts from, edit the `line` values in `teams.js`.
 
+**Clear picks** and **Reset everything** ask for a password before they do anything. It is
+a gate latch, not a lock: this is a public static site, so its code is readable and a
+determined person gets past it — what it reliably stops is a stray thumb. The plaintext is
+not in the repo; `PASS_HASH` at the top of `app.js` is its SHA-256. To change it, run
+`echo -n 'newword' | shasum -a 256` and paste the hex over the old value. The real safety
+net is `draft.json`: it survives any reset, so **Load published draft** always brings the
+board back.
+
 Once every pick is in, the draft's own settings — season, teams each, first pick, the NFC
 West lock, and the line editor — fold away under **Draft Setup** and go read-only, so a
 finished season can't be rewritten by a stray tap. Player names stay editable. Clearing the

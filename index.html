@@ -225,6 +225,33 @@
   <span>LOJO</span>
 </footer>
 
+<div class="sheet" id="passSheet" hidden>
+  <div class="sheet-scrim" data-close></div>
+  <div class="sheet-panel pass-panel" role="dialog" aria-modal="true" aria-labelledby="passTitle">
+    <header class="sheet-head">
+      <div>
+        <h2 class="sheet-title" id="passTitle">Password</h2>
+        <p class="sheet-sub" id="passSub"></p>
+      </div>
+      <button class="sheet-x" id="passClose" type="button" aria-label="Cancel">✕</button>
+    </header>
+    <div class="pass-body">
+      <form id="passForm" autocomplete="off">
+        <label class="field">
+          <span class="field-lbl" id="passLabel">Password</span>
+          <input id="passInput" type="password" autocomplete="current-password"
+                 autocapitalize="off" autocorrect="off" spellcheck="false">
+        </label>
+        <p class="pass-error" id="passError" role="alert" hidden>That's not it. Try again.</p>
+        <div class="btnrow pass-actions">
+          <button class="btn btn-danger" id="passGo" type="submit">Confirm</button>
+          <button class="btn btn-ghost" id="passCancel" type="button">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="historySheet" hidden>
   <div class="sheet-scrim" data-close></div>
   <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="historyTitle">

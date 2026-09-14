@@ -418,6 +418,33 @@ html,body{ overscroll-behavior-y:contain; }
 .field input:focus{ outline:none; border-color:#34415c }
 .hint{ font-size:11.5px; color:var(--ink-3); line-height:1.5; margin:7px 0 0 }
 
+/* ---------- the password gate --------------------------------------- */
+.pass-panel{ max-width:400px; }
+.pass-body{ padding:4px 16px calc(18px + env(safe-area-inset-bottom,0px)); }
+.pass-body .field{ margin-top:8px }
+.pass-body input[type=password],
+.pass-body input[type=text]{
+  width:100%; background:var(--bg-2); border:1px solid var(--line); color:var(--ink);
+  border-radius:var(--radius-sm); padding:11px 12px; font-size:16px;  /* 16px: iOS zooms below it */
+  letter-spacing:.06em;
+}
+.pass-body input:focus{ outline:none; border-color:#34415c }
+.pass-error{ margin:9px 0 0; font-size:12px; color:var(--danger) }
+.pass-actions{ margin-top:14px }
+.pass-actions .btn{ flex:1 1 auto; justify-content:center }
+
+/* a wrong password shakes the panel rather than only printing a line */
+.sheet.is-wrong .sheet-panel{ animation:pass-shake .4s }
+@keyframes pass-shake{
+  10%,90%{ transform:translateX(-2px) }
+  20%,80%{ transform:translateX(4px) }
+  30%,50%,70%{ transform:translateX(-7px) }
+  40%,60%{ transform:translateX(7px) }
+}
+@media (prefers-reduced-motion:reduce){
+  .sheet.is-wrong .sheet-panel{ animation:none }
+}
+
 /* ---------- the folded, lockable draft setup ------------------------ */
 .setup-fold{
   margin-top:16px; border:1px solid var(--line);
@@ -602,6 +629,13 @@ body.sheet-open{ overflow:hidden }
 
 @media (max-width:660px){
   .sheet-panel{ max-width:none; height:100%; border:0 }
+  /* ...except the password prompt, which is four lines and should not
+     take the whole screen to ask one question. */
+  .sheet-panel.pass-panel{
+    height:auto; margin:auto 12px; border:1px solid var(--line);
+    border-radius:var(--radius);
+  }
+  .pass-panel .sheet-head{ padding-top:16px }
 }
 
 /* ---------- misc ---------------------------------------------------- */
