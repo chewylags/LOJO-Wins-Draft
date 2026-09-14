@@ -22,6 +22,7 @@ const ASSETS = [
   ['src', 'history.js'],
   ['src', 'records-parse.js'],
   ['src', 'app.js'],
+  ['href', 'manifest.webmanifest'],
 ];
 
 const sha = (process.env.GITHUB_SHA || '').slice(0, 8);
