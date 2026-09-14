@@ -16,7 +16,7 @@
   // Nothing else needs to change. And the real safety net is elsewhere:
   // the published draft.json survives any reset, so "Load published draft"
   // always brings the board back.
-  var PASS_HASH = '8deb5d9d4710a531eea84a0845c7ad8a27d16468db509aaf36644343c26fc458';
+  var PASS_HASH = '48e58065e02d5f7af571ff1b7466ae2ced0f9161ada9fe944adb69d0854df90e';
 
   // Undo and redo only earn their place in the header while a draft is
   // actually being made. Flip this back to true before next year's draft
