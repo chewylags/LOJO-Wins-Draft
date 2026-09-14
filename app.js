@@ -6,6 +6,11 @@
 (function () {
   'use strict';
 
+  // Undo and redo only earn their place in the header while a draft is
+  // actually being made. Flip this back to true before next year's draft
+  // and both buttons return, fully wired — nothing else to change.
+  var SHOW_UNDO_REDO = false;
+
   var STORE_KEY = 'lojo-wins-draft-v1';
   var LOCKED_DIVISION = 'NFC West';
   var LOGO_BASE = 'https://a.espncdn.com/i/teamlogos/nfl/500/';
@@ -1431,6 +1436,9 @@
   /* ---------------- wiring ---------------------------------------- */
 
   function bind() {
+    // Kept in the page and wired either way, so turning SHOW_UNDO_REDO back
+    // on is the only step: no listener to re-add, nothing left half-bound.
+    $('#undoRedo').hidden = !SHOW_UNDO_REDO;
     $('#btnUndo').addEventListener('click', undo);
     $('#btnRedo').addEventListener('click', redo);
 

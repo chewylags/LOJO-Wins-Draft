@@ -177,6 +177,11 @@ Flip on **Edit win totals** in Setup and every line on the board becomes an inpu
 the new numbers, and the board re-ranks itself as you go. To change the baseline defaults
 that a fresh browser starts from, edit the `line` values in `teams.js`.
 
+Undo and redo are hidden once a draft is finished, since there is nothing left to take
+back. To bring them back for the next draft, set `SHOW_UNDO_REDO` to `true` at the top of
+`app.js` — the buttons stay in the page and stay wired the whole time, so that one word is
+the only change.
+
 ## Files
 
 | File | What's in it |
