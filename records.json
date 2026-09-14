@@ -1,8 +1,8 @@
 {
-  "updated": "2026-09-13T23:55:50.172Z",
+  "updated": "2026-09-14T03:58:08.275Z",
   "source": "https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings?region=us&lang=en&contentorigin=espn&type=0&level=1",
   "teams": 32,
-  "played": 24,
+  "played": 30,
   "records": {
     "ARI": {
       "w": 1,
@@ -46,7 +46,7 @@
     },
     "DAL": {
       "w": 0,
-      "l": 0,
+      "l": 1,
       "t": 0
     },
     "DEN": {
@@ -61,7 +61,7 @@
     },
     "GB": {
       "w": 0,
-      "l": 0,
+      "l": 1,
       "t": 0
     },
     "HOU": {
@@ -105,7 +105,7 @@
       "t": 0
     },
     "MIN": {
-      "w": 0,
+      "w": 1,
       "l": 0,
       "t": 0
     },
@@ -120,7 +120,7 @@
       "t": 0
     },
     "NYG": {
-      "w": 0,
+      "w": 1,
       "l": 0,
       "t": 0
     },
@@ -130,7 +130,7 @@
       "t": 0
     },
     "PHI": {
-      "w": 0,
+      "w": 1,
       "l": 0,
       "t": 0
     },
@@ -161,7 +161,7 @@
     },
     "WSH": {
       "w": 0,
-      "l": 0,
+      "l": 1,
       "t": 0
     }
   }
