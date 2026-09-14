@@ -272,6 +272,7 @@
       f: state.first,
       z: state.size,
       w: state.lockNFCW ? 1 : 0,
+      u: state.updatedAt || 0,
       p: state.picks,
       x: (function () {
         var out = {};
@@ -313,6 +314,7 @@
     return sanitize({
       season: p.s, names: p.n, first: p.f, size: p.z,
       lockNFCW: p.w !== 0, picks: p.p, swaps: swaps, lines: p.l, records: records,
+      updatedAt: p.u || 0,
     });
   }
 
@@ -1288,10 +1290,9 @@
   // Adopt it only when it is genuinely newer than what this browser has,
   // so a publish reaches both of you on a refresh without stamping over
   // edits made here since.
-  function considerPublishedDraft(fromLink, localAt) {
-    if (fromLink) return Promise.resolve();     // an explicit link is deliberate
+  function considerPublishedDraft(sinceAt) {
     return loadPublishedDraft().then(function (pub) {
-      if (!pub || !pub.publishedAt || pub.publishedAt <= localAt) return;
+      if (!pub || !pub.publishedAt || pub.publishedAt <= sinceAt) return;
       adoptPublished(pub);
     });
   }
@@ -1524,14 +1525,23 @@
       toast('Fresh start');
       // Come back to the published draft if there is one, rather than
       // sitting blank until somebody publishes again.
-      considerPublishedDraft(null, 0);
+      considerPublishedDraft(0);
     });
 
+    // Navigating to a different link while the app is open goes through the
+    // same age check as a cold start, so a stale URL cannot roll the board
+    // back here either.
     window.addEventListener('hashchange', function () {
       var incoming = readHash();
-      if (incoming && encodeState() !== location.hash.slice(3)) {
-        state = incoming; renderAll(); toast('Draft loaded from link');
+      if (!incoming || encodeState() === location.hash.slice(3)) return;
+      if ((incoming.updatedAt || 0) < (state.updatedAt || 0)) {
+        syncHash();                       // put our own, newer state back
+        return;
       }
+      state = incoming;
+      save();
+      renderAll();
+      toast('Draft loaded from link');
     });
   }
 
@@ -1545,8 +1555,17 @@
 
   function init() {
     var fromLink = readHash(), local = loadLocal();
-    var localAt = local ? local.updatedAt || 0 : 0;
-    if (fromLink) {
+
+    // Whichever copy is most recent wins. A link carries its own stamp, so
+    // a URL pinned to the Home Screen — frozen at whatever the draft looked
+    // like the day it was saved — can no longer resurrect an old board and
+    // write it over a newer one. Links from before this carry no stamp, so
+    // they rank below any saved draft but still beat a browser with none.
+    var linkAt = fromLink ? (fromLink.updatedAt || 0) : -1;
+    var localAt = local ? (local.updatedAt || 0) : -1;
+    var usedLink = fromLink && linkAt >= localAt;
+
+    if (usedLink) {
       state = fromLink;
       try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
     } else if (local) {
@@ -1562,8 +1581,8 @@
       .then(function () { adopt(cachedLive()); })
       .then(function () { note('', autoSummary()); });
     checkForNewBuild();
-    considerPublishedDraft(fromLink, localAt);
-    if (fromLink) toast('Draft loaded from link');
+    considerPublishedDraft(Math.max(linkAt, localAt));
+    if (usedLink) toast('Draft loaded from link');
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
