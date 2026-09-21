@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-20T23:56:05.665Z",
+  "updated": "2026-09-21T09:50:41.648Z",
   "source": "https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings?region=us&lang=en&contentorigin=espn&type=0&level=1",
   "teams": 32,
   "played": 32,
@@ -71,7 +71,7 @@
     },
     "IND": {
       "w": 0,
-      "l": 1,
+      "l": 2,
       "t": 0
     },
     "JAX": {
@@ -80,7 +80,7 @@
       "t": 0
     },
     "KC": {
-      "w": 1,
+      "w": 2,
       "l": 0,
       "t": 0
     },
