@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-28T01:31:32.230Z",
+  "updated": "2026-09-28T04:20:41.104Z",
   "source": "https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings?region=us&lang=en&contentorigin=espn&type=0&level=1",
   "teams": 32,
   "played": 32,
@@ -50,7 +50,7 @@
       "t": 0
     },
     "DEN": {
-      "w": 1,
+      "w": 2,
       "l": 1,
       "t": 0
     },
@@ -91,7 +91,7 @@
     },
     "LAR": {
       "w": 1,
-      "l": 1,
+      "l": 2,
       "t": 0
     },
     "LV": {
