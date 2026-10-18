@@ -1,11 +1,11 @@
 {
-  "updated": "2026-10-18T21:41:27.194Z",
+  "updated": "2026-10-18T23:58:24.386Z",
   "source": "https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings?region=us&lang=en&contentorigin=espn&type=0&level=1",
   "teams": 32,
   "played": 32,
   "records": {
     "ARI": {
-      "w": 1,
+      "w": 2,
       "l": 4,
       "t": 0
     },
@@ -80,18 +80,18 @@
       "t": 0
     },
     "KC": {
-      "w": 4,
+      "w": 5,
       "l": 0,
       "t": 0
     },
     "LAC": {
       "w": 0,
-      "l": 5,
+      "l": 6,
       "t": 0
     },
     "LAR": {
       "w": 2,
-      "l": 3,
+      "l": 4,
       "t": 0
     },
     "LV": {
