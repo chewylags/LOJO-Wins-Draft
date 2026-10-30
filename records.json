@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-27T04:05:51.098Z",
+  "updated": "2026-10-30T04:52:45.033Z",
   "source": "https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings?region=us&lang=en&contentorigin=espn&type=0&level=1",
   "teams": 32,
   "played": 32,
@@ -26,7 +26,7 @@
     },
     "CAR": {
       "w": 3,
-      "l": 3,
+      "l": 4,
       "t": 0
     },
     "CHI": {
@@ -60,7 +60,7 @@
       "t": 0
     },
     "GB": {
-      "w": 4,
+      "w": 5,
       "l": 3,
       "t": 0
     },
