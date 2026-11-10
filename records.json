@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-09T05:14:00.001Z",
+  "updated": "2026-11-10T06:21:58.131Z",
   "source": "https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings?region=us&lang=en&contentorigin=espn&type=0&level=1",
   "teams": 32,
   "played": 32,
@@ -20,7 +20,7 @@
       "t": 0
     },
     "BUF": {
-      "w": 6,
+      "w": 7,
       "l": 1,
       "t": 0
     },
@@ -106,7 +106,7 @@
     },
     "MIN": {
       "w": 6,
-      "l": 1,
+      "l": 2,
       "t": 0
     },
     "NE": {
