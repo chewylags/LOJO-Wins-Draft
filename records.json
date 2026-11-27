@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-26T20:11:23.185Z",
+  "updated": "2026-11-27T07:19:59.884Z",
   "source": "https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings?region=us&lang=en&contentorigin=espn&type=0&level=1",
   "teams": 32,
   "played": 32,
@@ -20,7 +20,7 @@
       "t": 0
     },
     "BUF": {
-      "w": 9,
+      "w": 10,
       "l": 1,
       "t": 0
     },
@@ -30,7 +30,7 @@
       "t": 0
     },
     "CHI": {
-      "w": 8,
+      "w": 9,
       "l": 2,
       "t": 0
     },
@@ -46,7 +46,7 @@
     },
     "DAL": {
       "w": 5,
-      "l": 6,
+      "l": 7,
       "t": 0
     },
     "DEN": {
@@ -56,7 +56,7 @@
     },
     "DET": {
       "w": 8,
-      "l": 2,
+      "l": 3,
       "t": 0
     },
     "GB": {
@@ -81,7 +81,7 @@
     },
     "KC": {
       "w": 8,
-      "l": 2,
+      "l": 3,
       "t": 0
     },
     "LAC": {
@@ -130,7 +130,7 @@
       "t": 0
     },
     "PHI": {
-      "w": 3,
+      "w": 4,
       "l": 7,
       "t": 0
     },
