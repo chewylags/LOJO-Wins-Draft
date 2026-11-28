@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-27T07:19:59.884Z",
+  "updated": "2026-11-28T18:57:54.504Z",
   "source": "https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings?region=us&lang=en&contentorigin=espn&type=0&level=1",
   "teams": 32,
   "played": 32,
@@ -51,7 +51,7 @@
     },
     "DEN": {
       "w": 8,
-      "l": 2,
+      "l": 3,
       "t": 0
     },
     "DET": {
@@ -135,7 +135,7 @@
       "t": 0
     },
     "PIT": {
-      "w": 6,
+      "w": 7,
       "l": 4,
       "t": 0
     },
