@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
@@ -42,5 +42,25 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
+      # deploy-pages does not receive the artifact; it looks it up through the
+      # artifacts API, which is eventually consistent. It has asked 0.6s after
+      # an upload reported success and been told "Found 0 artifact(s)", which
+      # fails the whole deploy even though nothing is wrong with the build.
+      # GitHub's own advice for this is to re-run later, so: pause for the
+      # metadata to settle, and if it still is not visible, wait and try once
+      # more rather than mailing out a failure for a records update.
+      - name: Let the artifact metadata settle
+        run: sleep 15
+
       - id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Wait before retrying
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 45
+
+      - id: retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
